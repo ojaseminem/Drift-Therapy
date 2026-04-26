@@ -22,10 +22,6 @@ Session Length: 1–3 mins
 - Slide finger left/right → Steering (analog)
 - Tap / Hold → Drift
 
-### Optional (Gyro)
-- Tilt device → Steering
-- Tap → Drift
-
 Notes:
 - No acceleration/brake
 - Drift is primary mechanic
