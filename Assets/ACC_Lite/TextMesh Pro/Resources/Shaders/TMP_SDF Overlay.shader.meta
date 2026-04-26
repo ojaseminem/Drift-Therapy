@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: dd89cf5b9246416f84610a006f916af7
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 145489
+  packageName: Arcade Car Controller (Lite version)
+  packageVersion: 1.5.02
+  assetPath: Assets/ACC_Lite/TextMesh Pro/Resources/Shaders/TMP_SDF Overlay.shader
+  uploadId: 466643

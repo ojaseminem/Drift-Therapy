@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 1e3b057af24249748ff873be7fafee47
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 145489
+  packageName: Arcade Car Controller (Lite version)
+  packageVersion: 1.5.02
+  assetPath: Assets/ACC_Lite/TextMesh Pro/Resources/Shaders/TMP_Bitmap-Mobile.shader
+  uploadId: 466643

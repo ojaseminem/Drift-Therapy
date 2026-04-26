@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 48bb5f55d8670e349b6e614913f9d910
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures: []
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 145489
+  packageName: Arcade Car Controller (Lite version)
+  packageVersion: 1.5.02
+  assetPath: Assets/ACC_Lite/TextMesh Pro/Resources/Shaders/TMP_Bitmap-Custom-Atlas.shader
+  uploadId: 466643
