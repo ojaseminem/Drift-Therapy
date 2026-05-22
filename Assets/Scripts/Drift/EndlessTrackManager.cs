@@ -48,7 +48,6 @@ public class EndlessTrackManager : MonoBehaviour
 
     void Start()
     {
-        ResolveReferences();
         if (roadTemplate == null || player == null)
         {
             enabled = false;
@@ -80,27 +79,6 @@ public class EndlessTrackManager : MonoBehaviour
         }
 
         RecyclePassedSegments();
-    }
-
-    void ResolveReferences()
-    {
-        if (player == null)
-        {
-            var playerObject = GameObject.FindGameObjectWithTag("Player");
-            if (playerObject != null)
-            {
-                player = playerObject.transform;
-            }
-        }
-
-        if (roadTemplate == null)
-        {
-            var found = GameObject.Find("RoadTemplate");
-            if (found != null)
-            {
-                roadTemplate = found;
-            }
-        }
     }
 
     void PrepareTemplateAndLength()
