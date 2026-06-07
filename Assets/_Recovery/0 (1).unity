@@ -299,19 +299,19 @@ MonoBehaviour:
   randomizeSeed: 1
   seed: 42
   curveSettings:
-    BaseRoadHalfWidth: 4
-    BankPerDegreeYaw: 0.65
-    MaxBankAngle: 20
-    StraightMinNodes: 3
-    StraightMaxNodes: 6
-    CurveMinNodes: 8
-    CurveMaxNodes: 15
-    GentleYaw: 11
-    MediumYaw: 16
-    TightYaw: 22
-    YawSmoothing: 0.15
-    MaxAccumulatedYaw: 85
-  DifficultyT: 0
+    BaseRoadHalfWidth: 5
+    BankPerDegreeYaw: 0.5
+    MaxBankAngle: 14
+    StraightMinNodes: 10
+    StraightMaxNodes: 18
+    CurveMinNodes: 12
+    CurveMaxNodes: 22
+    GentleYaw: 5.5
+    MediumYaw: 9
+    TightYaw: 13
+    YawSmoothing: 0.12
+    MaxAccumulatedYaw: 75
+  DifficultyT: 0.399
   biomeManager: {fileID: 0}
 --- !u!4 &997332218
 Transform:
@@ -399,16 +399,6 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 199261086769255912, guid: c3561634431fb8f40830bd4c3b642798,
-        type: 3}
-      propertyPath: m_Materials.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 199261086769255912, guid: c3561634431fb8f40830bd4c3b642798,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 10301, guid: 0000000000000000f000000000000000, type: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -531,21 +521,6 @@ PrefabInstance:
     - target: {fileID: 4622598348882566, guid: 3023143f80410e345aef19db1f82c9ea, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 199362628286919318, guid: 3023143f80410e345aef19db1f82c9ea,
-        type: 3}
-      propertyPath: m_Materials.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 199362628286919318, guid: 3023143f80410e345aef19db1f82c9ea,
-        type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 460b530b786f9494b9ab2df30d5aea02, type: 2}
-    - target: {fileID: 199729217124764016, guid: 3023143f80410e345aef19db1f82c9ea,
-        type: 3}
-      propertyPath: m_Materials.Array.size
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
