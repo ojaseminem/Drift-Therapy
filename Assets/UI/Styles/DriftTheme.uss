@@ -1,0 +1,156 @@
+/* ============================================================================
+   DRIFT THERAPY — THEME + SCREEN LAYOUT
+   Scoped overrides + per-screen layout helpers for the game UI. We DO NOT
+   fork any component file (Buttons/Overlays/Badges/...). We only:
+     1. Re-point a few design tokens under `.ds-root` so primary/accent reads
+        as Drift Therapy's vibrant cyan-magenta rather than the stock green.
+     2. Add `dt-*` layout classes for HUD anchoring, big numeric score,
+        near-miss flash, and the shared `.dt-hidden` show/hide toggle.
+   ============================================================================ */
+
+/* ---------- Token overrides (vibrant Drift Therapy accent) ----------
+   Redefining custom properties on `.ds-root` cascades the new values to every
+   component that reads var(--color-primary) etc. — buttons, badges, progress,
+   chips all re-tint without touching their own USS. */
+.ds-root {
+    --color-primary:        #2DE2C5;   /* vibrant teal */
+    --color-primary-hover:  #25C6AD;
+    --color-primary-press:  #1FA992;
+    --color-primary-soft:   rgba(45, 226, 197, 0.16);
+
+    --color-secondary:       #FF4D9D;  /* hot magenta */
+    --color-secondary-hover: #E63C8A;
+    --color-secondary-press: #C72E74;
+    --color-secondary-soft:  rgba(255, 77, 157, 0.16);
+
+    --color-text-on-accent:  #06121A;  /* dark ink for legibility on teal */
+}
+
+/* ---------- Shared show/hide toggle ----------
+   Presenters flip this class (or style.display) to mount/unmount elements. */
+.dt-hidden {
+    display: none;
+}
+
+/* ============================================================================
+   HUD (in-run overlay) — kept sparse so it never blocks the road/car.
+   ============================================================================ */
+
+/* HUD fills the panel but stays transparent; safe-area padding is applied at
+   runtime by SafeAreaBinder via inline padding on the document root. */
+.dt-hud {
+    background-color: rgba(0, 0, 0, 0);
+    flex-grow: 1;
+}
+
+/* Top row: distance | multiplier | pause. */
+.dt-hud__top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+    padding-top: var(--space-3);
+}
+
+.dt-distance {
+    -unity-font-style: bold;
+    color: var(--color-text-primary);
+    letter-spacing: 1px;
+    min-width: 60px;
+}
+
+/* Multiplier badge — reuses .ds-badge geometry, just gives it presence. */
+.dt-multiplier {
+    -unity-font-style: bold;
+    letter-spacing: 0.5px;
+}
+
+.dt-pause-btn {
+    flex-shrink: 0;
+}
+
+/* Score sits high-centre, large and legible over busy gameplay. */
+.dt-score-wrap {
+    align-items: center;
+    justify-content: flex-start;
+    margin-top: var(--space-4);
+}
+.dt-score {
+    font-size: 56px;
+    -unity-font-style: bold;
+    color: var(--color-text-primary);
+    -unity-text-align: middle-center;
+    /* subtle dark halo so light score stays readable on bright road */
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* Transient near-miss flash — centred, accent-coloured, bold. */
+.dt-nearmiss {
+    position: absolute;
+    top: 42%;
+    left: 0;
+    right: 0;
+    font-size: 28px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    color: var(--color-secondary);
+    -unity-text-align: middle-center;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+/* ============================================================================
+   OVERLAY SCREENS (End Run / Pause)
+   ============================================================================ */
+
+/* Root that hosts a full-screen backdrop + centred modal. */
+.dt-overlay-root {
+    flex-grow: 1;
+}
+
+/* Give the shared modal a touch more breathing room on portrait phones. */
+.dt-modal {
+    width: 300px;
+    max-width: 88%;
+    padding: var(--space-5);
+}
+
+/* Large numeric final score on the end screen. */
+.dt-final-score {
+    font-size: 48px;
+    -unity-font-style: bold;
+    color: var(--color-primary);
+    -unity-text-align: middle-center;
+    margin-top: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+.dt-best-score {
+    -unity-text-align: middle-center;
+    margin-top: var(--space-1);
+}
+
+.dt-newbest-badge {
+    margin-bottom: var(--space-2);
+}
+
+/* Vertically stacked action buttons with consistent spacing. */
+.dt-actions-col {
+    flex-direction: column;
+    margin-top: var(--space-3);
+}
+.dt-action {
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+/* ---------- Mobile touch sizing ----------
+   `.mobile` is added to the root at runtime when Screen.width < 768.
+   Bump button + tap-target heights for thumbs. */
+.mobile .ds-btn {
+    height: 48px;
+    font-size: var(--font-size-h3);
+}
+.mobile .ds-btn--icon {
+    width: 48px;
+    height: 48px;
+}

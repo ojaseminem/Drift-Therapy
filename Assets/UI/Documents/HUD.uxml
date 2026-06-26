@@ -1,0 +1,30 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <!-- Master design-system stylesheet (tokens + components) -->
+    <Style src="project://database/Assets/DesignSystem/Resources/UI/Styles/DesignSystem/DesignSystem.uss" />
+    <!-- Drift Therapy theme overrides + screen layout helpers -->
+    <Style src="project://database/Assets/UI/Styles/DriftTheme.uss" />
+
+    <!-- In-run HUD overlay. Transparent so the road/car show through.
+         picking-mode=Ignore on layout containers lets taps pass to gameplay;
+         only the pause button is interactive. -->
+    <ui:VisualElement name="hud-root" class="ds-root mobile dt-hud" picking-mode="Ignore">
+
+        <!-- Top bar: distance (left), multiplier badge (centre), pause (right) -->
+        <ui:VisualElement name="dt-hud-top" class="dt-hud__top" picking-mode="Ignore">
+            <ui:Label name="dt-distance" text="0 m" class="ds-caption dt-distance" />
+            <ui:Label name="dt-multiplier" text="x1.0" class="ds-badge ds-badge--legendary dt-multiplier dt-hidden" />
+            <ui:Button name="dt-pause-btn" class="ds-btn ds-btn--icon dt-pause-btn">
+                <ui:VisualElement class="ds-icon ds-icon--menu" />
+            </ui:Button>
+        </ui:VisualElement>
+
+        <!-- Prominent centred score -->
+        <ui:VisualElement name="dt-hud-score-wrap" class="dt-score-wrap" picking-mode="Ignore">
+            <ui:Label name="dt-score" text="0" class="dt-score" />
+        </ui:VisualElement>
+
+        <!-- Transient near-miss flash, hidden by default -->
+        <ui:Label name="dt-nearmiss" text="NEAR MISS!" class="dt-nearmiss dt-hidden" picking-mode="Ignore" />
+
+    </ui:VisualElement>
+</ui:UXML>

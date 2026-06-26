@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/DesignSystem/Resources/UI/Styles/DesignSystem/DesignSystem.uss" />
+    <Style src="project://database/Assets/UI/Styles/DriftTheme.uss" />
+
+    <!-- Game-over screen. Full-screen dimmed backdrop centring the modal. -->
+    <ui:VisualElement name="endrun-root" class="ds-root mobile dt-overlay-root">
+        <ui:VisualElement name="dt-endrun-backdrop" class="ds-backdrop">
+
+            <ui:VisualElement name="dt-endrun-modal" class="ds-modal dt-modal">
+
+                <ui:VisualElement class="ds-modal__header" style="justify-content: center;">
+                    <ui:Label text="Run Over" class="ds-h2 ds-modal__title" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="ds-modal__body" style="align-items: center;">
+                    <!-- "New Best!" badge, hidden until we beat the record -->
+                    <ui:Label name="dt-newbest-badge" text="NEW BEST!" class="ds-badge ds-badge--legendary dt-newbest-badge dt-hidden" />
+
+                    <ui:Label text="SCORE" class="ds-section-label" style="margin-top: 8px;" />
+                    <ui:Label name="dt-final-score" text="0" class="dt-final-score" />
+
+                    <ui:Label text="BEST" class="ds-section-label" style="margin-top: 4px;" />
+                    <ui:Label name="dt-best-score" text="0" class="ds-h3 dt-best-score" />
+                </ui:VisualElement>
+
+                <!-- Actions stacked (block primary, then revive, then ghost) -->
+                <ui:VisualElement name="dt-endrun-actions" class="dt-actions-col">
+                    <ui:Button name="dt-restart-btn" text="Restart" class="ds-btn ds-btn--primary ds-btn--block dt-action" />
+                    <ui:Button name="dt-revive-btn" text="Revive" class="ds-btn ds-btn--secondary ds-btn--block dt-action dt-hidden" />
+                    <ui:Button name="dt-removeads-btn" text="Remove Ads" class="ds-btn ds-btn--ghost ds-btn--block dt-action" />
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
