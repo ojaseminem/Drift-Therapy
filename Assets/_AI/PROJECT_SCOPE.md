@@ -24,7 +24,7 @@ Drive -> Drift -> Dodge -> Build combo -> Increase difficulty -> Crash -> Restar
 - Smooth, responsive, arcade handling.
 - Easy to learn, hard to master.
 - Short sessions, high replay.
-- Minimal UI, strong feedback.
+- Minimal Unity UI Toolkit UI, strong feedback.
 
 ## Visual target
 - Semi top-down / over-shoulder camera.
@@ -36,3 +36,4 @@ Drive -> Drift -> Dodge -> Build combo -> Increase difficulty -> Crash -> Restar
 - Manual gear shifting.
 - Complex simulation handling.
 - Large menu meta-game before the core loop feels good.
+- New first-party Canvas/TMP UI; game UI should follow `UI_TOOLKIT_PLAN.md`.

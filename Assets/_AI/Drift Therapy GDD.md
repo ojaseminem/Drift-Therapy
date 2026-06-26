@@ -104,6 +104,10 @@ Audio:
 
 ## 9. UI
 
+Implementation:
+- Unity UI Toolkit (`UIDocument`, UXML, USS)
+- Shared design system per `UI_TOOLKIT_PLAN.md`
+
 In-Game:
 - Score
 - Distance
