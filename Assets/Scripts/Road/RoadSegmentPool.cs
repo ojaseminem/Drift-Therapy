@@ -8,6 +8,26 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class RoadSegmentPool : MonoBehaviour
 {
+    public readonly struct RoadSample
+    {
+        public readonly Vector3 Position;
+        public readonly Quaternion Rotation;
+        public readonly Vector3 Forward;
+        public readonly Vector3 Right;
+        public readonly float HalfWidth;
+        public readonly float ArcDistance;
+
+        public RoadSample(Vector3 position, Quaternion rotation, float halfWidth, float arcDistance)
+        {
+            Position = position;
+            Rotation = rotation;
+            Forward = rotation * Vector3.forward;
+            Right = rotation * Vector3.right;
+            HalfWidth = halfWidth;
+            ArcDistance = arcDistance;
+        }
+    }
+
     [Header("References")]
     [SerializeField] Transform  player;
     [SerializeField] Material[] roadMaterials; // [0] asphalt, [1] kerb
@@ -254,6 +274,26 @@ public class RoadSegmentPool : MonoBehaviour
     }
 
     // ── Pool creation ───────────────────────────────────────────────────
+    public bool TrySampleAtArcDistance(float arcDistance, out RoadSample sample)
+    {
+        sample = default;
+
+        if (spline == null || spline.NodeCount < 2)
+            return false;
+
+        float t = Mathf.Clamp(arcDistance / NodeSpacing, 0f, spline.NodeCount - 1);
+        if (!spline.SampleAt(t, out Vector3 pos, out Quaternion rot, out float halfWidth, out _))
+            return false;
+
+        sample = new RoadSample(pos, rot, halfWidth, arcDistance);
+        return true;
+    }
+
+    public bool TrySampleAhead(float aheadDistance, out RoadSample sample)
+    {
+        return TrySampleAtArcDistance(distanceTravelled + Mathf.Max(0f, aheadDistance), out sample);
+    }
+
     GameObject CreateSegment(int idx)
     {
         var go = new GameObject($"RoadSeg_{idx:00}");

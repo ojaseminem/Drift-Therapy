@@ -39,6 +39,9 @@ public class HyperDriftCarController : MonoBehaviour
     float steering;
     bool driftActive;
 
+    public bool DriftActive => driftActive;
+    public float SpeedKph => car != null ? car.SpeedInHour : 0f;
+
     PG_WheelCollider[] wheelAdapters;
     float[] baseForwardStiffness;
     float[] baseSideStiffness;
