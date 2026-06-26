@@ -1,0 +1,14 @@
+schema_version = 1
+name = "GameDev - Drift Therapy"
+project_type = "game-development"
+launch_profiles = []
+shortcuts = []
+enabled_health_checks = [
+    "project-path",
+    "linked-apps",
+]
+
+[[linked_apps]]
+app_id = "unity"
+preferred_version = "6000.3.7"
+folder = "."
