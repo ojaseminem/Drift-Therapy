@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9edc3080a4883384b93b22770b4843da, type: 3}
+  m_Name: Vehicle_Drifter
+  m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.VehicleDef
+  id: drifter
+  displayName: Drifter
+  price: 0
+  ownedByDefault: 1
+  bodyColor: {r: 0.16, g: 0.7, b: 0.9, a: 1}

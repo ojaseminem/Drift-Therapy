@@ -122,6 +122,8 @@ public class GameController : MonoBehaviour
         Time.timeScale = 1f;
         paused = false;
 
+        ApplyVehicle();
+
         lastDistance = road != null ? road.DistanceTravelled : 0f;
 
         // Publish the initial score/best so the HUD has values immediately.
@@ -326,19 +328,47 @@ public class GameController : MonoBehaviour
     {
         score.FinalizeRun();
 
-        if (score.FinalScore > bestScore)
+        int final = score.FinalScore;
+
+        // Reward: coins scale with score, XP a touch slower. Banked to the wallet.
+        int coins = Mathf.Max(0, Mathf.RoundToInt(final * 0.10f));
+        int xp    = Mathf.Max(1, Mathf.RoundToInt(final * 0.05f));
+
+        if (GameApp.Instance != null)
         {
-            bestScore = score.FinalScore;
+            GameApp.Instance.SubmitRun(final, coins, xp);
+            bestScore = GameApp.Instance.Data.highScore;
+        }
+        else if (final > bestScore)
+        {
+            bestScore = final;
             SaveService.SetBestScore(bestScore);
             SaveService.Save();
         }
 
         GameSignals.RaiseRunFailed(reason);
-        GameSignals.RaiseScoreChanged(score.FinalScore, bestScore);
+        GameSignals.RaiseScoreChanged(final, bestScore);
 
         if (runState.CanRevive)
         {
             GameSignals.RaiseReviveOffered();
+        }
+    }
+
+    // ── Vehicle skin ─────────────────────────────────────────────────────────
+    void ApplyVehicle()
+    {
+        var sel = GameApp.Instance != null ? GameApp.Instance.Selected : null;
+        if (sel == null || player == null) return;
+
+        var mpb = new MaterialPropertyBlock();
+        foreach (var r in player.GetComponentsInChildren<Renderer>(true))
+        {
+            if (r == null || r.transform.name != "SunLineGTE") continue;
+            r.GetPropertyBlock(mpb);
+            mpb.SetColor("_BaseColor", sel.bodyColor);
+            mpb.SetColor("_Color", sel.bodyColor);
+            r.SetPropertyBlock(mpb);
         }
     }
 
