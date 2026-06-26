@@ -120,15 +120,17 @@ public class RoadSegmentPool : MonoBehaviour
             curveGen.WidthMultiplier = biomeManager.CurrentRoadWidthMultiplier;
         }
 
-        // Grow spline ahead
-        float needed = nextStartArc + spawnAheadDistance + segmentArcLength * 2f;
-        while (splineBuiltLength < needed) ExtendSpline();
-
-        // Spawn ahead
+        // Spawn ahead. Grow the spline per-segment so nextStartArc can never
+        // outrun the built spline (which would clamp SplinePosAtArc to a fixed
+        // end node and spin this loop forever). A guard caps work per frame.
+        int guard = 0;
         float distToNext = Vector3.Distance(player.position, SplinePosAtArc(nextStartArc));
-        while (distToNext < spawnAheadDistance)
+        while (distToNext < spawnAheadDistance && guard++ < 64)
         {
-            SpawnNext();
+            float need = nextStartArc + segmentArcLength + NodeSpacing * 2f;
+            while (splineBuiltLength < need) ExtendSpline();
+
+            if (!SpawnNext()) break;
             distToNext = Vector3.Distance(player.position, SplinePosAtArc(nextStartArc));
         }
 
@@ -166,7 +168,7 @@ public class RoadSegmentPool : MonoBehaviour
     }
 
     // ── Segment spawn ───────────────────────────────────────────────────
-    void SpawnNext()
+    bool SpawnNext()
     {
         if (freePool.Count == 0)
         {
@@ -178,7 +180,7 @@ public class RoadSegmentPool : MonoBehaviour
         float endArc   = startArc + segmentArcLength;
 
         var samples = SampleRange(startArc, endArc);
-        if (samples == null || samples.Count < 2) return;
+        if (samples == null || samples.Count < 2) return false;
 
         var go = freePool.Dequeue();
         go.SetActive(true);
@@ -207,6 +209,7 @@ public class RoadSegmentPool : MonoBehaviour
         });
 
         nextStartArc = endArc;
+        return true;
     }
 
     // ── Segment recycle ─────────────────────────────────────────────────

@@ -20,36 +20,54 @@ public class TrafficSpawnerOffsetTests
     }
 
     [Test]
-    public void ChooseLateralOffset_stays_within_road_bounds()
+    public void LaneCount_is_even_and_at_least_two()
     {
-        for (int i = 0; i < 128; i++)
+        foreach (float halfWidth in new[] { 3.5f, 7f, 14f, 1.5f, 10f })
         {
-            float offset = spawner.ChooseLateralOffset(3.5f);
-            Assert.That(offset, Is.InRange(-3.5f, 3.5f));
+            int lanes = spawner.LaneCount(halfWidth);
+            Assert.That(lanes, Is.GreaterThanOrEqualTo(2), $"halfWidth {halfWidth}");
+            Assert.That(lanes % 2, Is.EqualTo(0), $"halfWidth {halfWidth} lanes {lanes}");
         }
     }
 
     [Test]
-    public void ChooseLateralOffset_avoids_reserved_center_lane_when_width_allows()
+    public void Wider_road_has_at_least_as_many_lanes()
     {
-        spawner.CenterSafetyHalfWidth = 0.75f;
-        spawner.EdgePadding = 0.25f;
+        Assert.That(spawner.LaneCount(14f), Is.GreaterThanOrEqualTo(spawner.LaneCount(7f)));
+        Assert.That(spawner.LaneCount(7f), Is.GreaterThanOrEqualTo(spawner.LaneCount(3.5f)));
+    }
 
-        for (int i = 0; i < 128; i++)
+    [Test]
+    public void LaneOffsets_stay_within_road_bounds()
+    {
+        foreach (float halfWidth in new[] { 3.5f, 7f, 14f })
         {
-            float offset = spawner.ChooseLateralOffset(3f);
-            Assert.That(Mathf.Abs(offset), Is.GreaterThanOrEqualTo(0.75f));
-            Assert.That(offset, Is.InRange(-2.75f, 2.75f));
+            int lanes = spawner.LaneCount(halfWidth);
+            for (int lane = 0; lane < lanes; lane++)
+            {
+                float offset = spawner.LaneOffset(lane, lanes, halfWidth);
+                Assert.That(offset, Is.InRange(-halfWidth, halfWidth),
+                    $"halfWidth {halfWidth} lane {lane}");
+            }
         }
     }
 
     [Test]
-    public void ChooseLateralOffset_allows_center_when_road_is_too_narrow()
+    public void Lanes_split_into_oncoming_and_forward()
     {
-        spawner.CenterSafetyHalfWidth = 1f;
-        spawner.EdgePadding = 0.25f;
-
-        float offset = spawner.ChooseLateralOffset(0.6f);
-        Assert.That(offset, Is.InRange(-0.35f, 0.35f));
+        foreach (float halfWidth in new[] { 3.5f, 7f, 14f })
+        {
+            int lanes = spawner.LaneCount(halfWidth);
+            bool hasOncoming = false; // negative offset
+            bool hasForward = false;  // positive offset
+            for (int lane = 0; lane < lanes; lane++)
+            {
+                float offset = spawner.LaneOffset(lane, lanes, halfWidth);
+                if (offset < 0f) hasOncoming = true;
+                if (offset > 0f) hasForward = true;
+            }
+            Assert.IsTrue(hasOncoming, $"halfWidth {halfWidth} should have an oncoming lane");
+            Assert.IsTrue(hasForward, $"halfWidth {halfWidth} should have a forward lane");
+        }
     }
 }

@@ -42,6 +42,12 @@ public class HyperDriftCarController : MonoBehaviour
     public bool DriftActive => driftActive;
     public float SpeedKph => car != null ? car.SpeedInHour : 0f;
 
+    /// <summary>
+    /// When false the car ignores input and applies no throttle (used to hold the
+    /// car still during the pre-run countdown). Set true on "GO!".
+    /// </summary>
+    public bool ControlsEnabled { get; set; } = true;
+
     PG_WheelCollider[] wheelAdapters;
     float[] baseForwardStiffness;
     float[] baseSideStiffness;
@@ -75,6 +81,16 @@ public class HyperDriftCarController : MonoBehaviour
 
     void Update()
     {
+        if (!ControlsEnabled)
+        {
+            // Hold position: no input, no throttle, grip restored to base.
+            steering = 0f;
+            driftActive = false;
+            car.UpdateControls(0f, 0f, false);
+            UpdateWheelGrip(false);
+            return;
+        }
+
         float targetSteer = Mathf.Clamp(inputReader.Steering, -maxSteerInput, maxSteerInput);
         steering = Mathf.MoveTowards(steering, targetSteer, steerResponse * Time.deltaTime);
 

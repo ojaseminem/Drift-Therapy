@@ -34,6 +34,12 @@ public class RoadCurveGenerator
         [Header("Road Width")]
         public float BaseRoadHalfWidth;
 
+        [Header("Lane Width Variation")]
+        public float LaneWidth;            // metres per lane (used to size 2/4/8-lane roads)
+        public float WidthChangePerNode;   // max half-width change per node (smooth taper)
+        public int   WidthMinNodes;        // length of a constant-width section
+        public int   WidthMaxNodes;
+
         [Header("Banking")]
         public float BankPerDegreeYaw;   // auto-bank coefficient
         public float MaxBankAngle;
@@ -63,6 +69,12 @@ public class RoadCurveGenerator
         {
             // Narrower road — forces commitment to the drift line
             BaseRoadHalfWidth  = 4f,       // 8 m total (was 10 m)
+
+            // Width varies in long sections: rarely 2-lane, often 4-lane, often 8-lane.
+            LaneWidth          = 3.5f,     // 2-lane≈7m, 4-lane≈14m, 8-lane≈28m total
+            WidthChangePerNode = 0.5f,     // gentle taper between width sections
+            WidthMinNodes      = 12,       // ~96 m
+            WidthMaxNodes      = 26,       // ~208 m
 
             BankPerDegreeYaw   = 0.65f,    // stronger camber feel on tight bends
             MaxBankAngle       = 20f,
@@ -97,8 +109,14 @@ public class RoadCurveGenerator
     int        sectionCount;      // how many sections generated (for sequencing)
     Vector3    lastPosition;
 
+    // Width-section state (independent cadence from curve sections)
+    float      currentHalfWidth;  // smoothed half-width actually emitted
+    float      targetHalfWidth;   // half-width goal for this width section
+    int        widthNodesLeft;    // remaining nodes in current width section
+
     public float DifficultyT      { get; set; }  // 0..1, set by game state
     public float WidthMultiplier  { get; set; } = 1f;  // per-biome
+    public float CurrentHalfWidth => currentHalfWidth;  // last emitted (pre-biome-mult)
 
     // ── Construction ─────────────────────────────────────────────────────
     public RoadCurveGenerator(Settings settings, int seed, Vector3 startPos, float startYaw = 0f)
@@ -108,14 +126,24 @@ public class RoadCurveGenerator
         worldYaw     = startYaw;
         Random.InitState(seed);
         sectionNodesLeft = 0; // force section pick on first node
+
+        currentHalfWidth = settings.BaseRoadHalfWidth;
+        targetHalfWidth  = settings.BaseRoadHalfWidth;
+        widthNodesLeft   = 0; // force width pick on first node
     }
 
     // ── Public API ────────────────────────────────────────────────────────
     public SplineRoadBuilder.SplineNode NextNode(float nodeSpacing)
     {
         if (sectionNodesLeft <= 0) PickNextSection();
+        if (widthNodesLeft   <= 0) PickNextWidth();
 
         sectionNodesLeft--;
+        widthNodesLeft--;
+
+        // Smooth, predictable width taper toward the section's target half-width.
+        currentHalfWidth = Mathf.MoveTowards(currentHalfWidth, targetHalfWidth,
+                                             Mathf.Max(0.01f, s.WidthChangePerNode));
 
         // Smooth yaw toward section target (slow lerp = long committed curves)
         currentYaw = Mathf.Lerp(currentYaw, targetYaw, s.YawSmoothing);
@@ -140,8 +168,27 @@ public class RoadCurveGenerator
 
         return new SplineRoadBuilder.SplineNode(
             pos, rotation,
-            s.BaseRoadHalfWidth * WidthMultiplier,
+            currentHalfWidth * WidthMultiplier,
             banking, 0f);
+    }
+
+    // ── Width-section picker ─────────────────────────────────────────────────
+    // Rarely 2-lane (tight, oncoming right at you), often 4-lane, often 8-lane.
+    void PickNextWidth()
+    {
+        float lane = s.LaneWidth > 0.1f ? s.LaneWidth : 3.5f;
+
+        float roll = Random.value;
+        int lanes;
+        if (roll < 0.15f)      lanes = 2;   // rare: 2-lane (one each way)
+        else if (roll < 0.65f) lanes = 4;   // common: 4-lane
+        else                   lanes = 8;   // common: 8-lane
+
+        targetHalfWidth = lane * lanes * 0.5f;
+
+        int minN = Mathf.Max(2, s.WidthMinNodes);
+        int maxN = Mathf.Max(minN, s.WidthMaxNodes);
+        widthNodesLeft = Random.Range(minN, maxN + 1);
     }
 
     // ── Section picker ───────────────────────────────────────────────────

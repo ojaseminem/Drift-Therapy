@@ -1,4 +1,8 @@
+using System.Collections;
 using UnityEngine;
+
+namespace DriftTherapy
+{
 
 /// <summary>
 /// The scene brain for a Drift Therapy run. Owns the (plain-C#) run state
@@ -26,6 +30,8 @@ public class GameController : MonoBehaviour
     [Header("Run Tuning")]
     [SerializeField] int reviveCount = 1;
     [SerializeField] bool autoStartOnLoad = true;
+    [Tooltip("Seconds of 3-2-1 countdown before the run begins (and car unlocks).")]
+    [SerializeField] int countdownSeconds = 3;
 
     [Header("Score Tuning")]
     [SerializeField] float comboStepDistance = 25f;
@@ -38,6 +44,7 @@ public class GameController : MonoBehaviour
     float lastDistance;
     int bestScore;
     bool paused;
+    Coroutine countdownRoutine;
 
     // ── Lifecycle ───────────────────────────────────────────────────────────
     void Awake()
@@ -124,12 +131,45 @@ public class GameController : MonoBehaviour
 
         if (autoStartOnLoad)
         {
-            runState.StartRun();
+            BeginCountdown();
         }
         else
         {
             GameSignals.RaiseRunReady();
         }
+    }
+
+    // ── Countdown ───────────────────────────────────────────────────────────
+    void BeginCountdown()
+    {
+        if (countdownRoutine != null)
+        {
+            StopCoroutine(countdownRoutine);
+        }
+        countdownRoutine = StartCoroutine(CountdownThenStart());
+    }
+
+    IEnumerator CountdownThenStart()
+    {
+        // Hold the car still and keep us out of Running until "GO!".
+        Time.timeScale = 1f;
+        paused = false;
+        if (car != null) car.ControlsEnabled = false;
+
+        GameSignals.RaiseRunReady();
+
+        for (int s = Mathf.Max(1, countdownSeconds); s > 0; s--)
+        {
+            GameSignals.RaiseCountdownTick(s);
+            yield return new WaitForSecondsRealtime(1f);
+        }
+
+        GameSignals.RaiseCountdownGo();
+
+        if (car != null) car.ControlsEnabled = true;
+        lastDistance = road != null ? road.DistanceTravelled : 0f;
+        runState.StartRun();
+        countdownRoutine = null;
     }
 
     // ── Per-frame gameplay accumulation ─────────────────────────────────────
@@ -176,8 +216,11 @@ public class GameController : MonoBehaviour
     // ── Intent handlers ─────────────────────────────────────────────────────
     void HandleStartRequested()
     {
-        // Only meaningful from Ready; StartRun guards the rest.
-        runState.StartRun();
+        // Only meaningful from Ready; run a fresh countdown then start.
+        if (runState.CurrentState == RunState.Ready && countdownRoutine == null)
+        {
+            BeginCountdown();
+        }
     }
 
     void HandleRestartRequested()
@@ -331,4 +374,5 @@ public class GameController : MonoBehaviour
         score.RegisterNearMiss();
         GameSignals.RaiseNearMiss();
     }
+}
 }

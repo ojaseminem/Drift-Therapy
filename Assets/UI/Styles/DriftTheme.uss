@@ -99,6 +99,20 @@
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
+/* Pre-run countdown — huge centred 3 / 2 / 1 / GO! over the road. */
+.dt-countdown {
+    position: absolute;
+    top: 36%;
+    left: 0;
+    right: 0;
+    font-size: 120px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    color: var(--color-primary);
+    -unity-text-align: middle-center;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.85);
+}
+
 /* ============================================================================
    OVERLAY SCREENS (End Run / Pause)
    ============================================================================ */

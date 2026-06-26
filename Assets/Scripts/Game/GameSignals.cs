@@ -46,6 +46,12 @@ public static class GameSignals
     /// <summary>Normalised difficulty (0..1) changed.</summary>
     public static event Action<float> DifficultyChanged;
 
+    // ── Countdown (gameplay → listeners) ────────────────────────────────────
+    /// <summary>Pre-run countdown ticked. Payload = seconds remaining (3,2,1).</summary>
+    public static event Action<int> CountdownTick;
+    /// <summary>Countdown finished — the run is going. ("GO!")</summary>
+    public static event Action CountdownGo;
+
     // ── Intents (UI → GameController) ───────────────────────────────────────
     /// <summary>Player asked to start the run (tap to start).</summary>
     public static event Action StartRequested;
@@ -75,6 +81,8 @@ public static class GameSignals
     public static void RaiseDistanceChanged(float metres) => DistanceChanged?.Invoke(metres);
     public static void RaiseNearMiss() => NearMiss?.Invoke();
     public static void RaiseDifficultyChanged(float t01) => DifficultyChanged?.Invoke(t01);
+    public static void RaiseCountdownTick(int secondsRemaining) => CountdownTick?.Invoke(secondsRemaining);
+    public static void RaiseCountdownGo() => CountdownGo?.Invoke();
 
     // ── Raisers: intents ────────────────────────────────────────────────────
     public static void RaiseStartRequested() => StartRequested?.Invoke();
@@ -96,6 +104,7 @@ public static class GameSignals
         ReviveOffered = null; Revived = null; Paused = null; Resumed = null;
         ScoreChanged = null; MultiplierChanged = null; DistanceChanged = null;
         NearMiss = null; DifficultyChanged = null;
+        CountdownTick = null; CountdownGo = null;
         StartRequested = null; RestartRequested = null; ReviveRequested = null;
         PauseToggled = null; ResumeRequested = null; QuitRequested = null;
     }

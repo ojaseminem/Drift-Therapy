@@ -46,6 +46,12 @@ public class RoadBiomeManager : MonoBehaviour
     {
         propBlock = new MaterialPropertyBlock();
 
+        // Make sure exponential distance fog is on so per-biome fogColor/fogDensity
+        // actually render — the scene's lighting settings may have fog disabled.
+        RenderSettings.fog = true;
+        if (RenderSettings.fogMode == FogMode.Linear)
+            RenderSettings.fogMode = FogMode.Exponential;
+
         if (biomes == null || biomes.Length == 0)
         {
             Debug.LogWarning("[BiomeManager] No biomes assigned.");

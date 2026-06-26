@@ -26,5 +26,8 @@
         <!-- Transient near-miss flash, hidden by default -->
         <ui:Label name="dt-nearmiss" text="NEAR MISS!" class="dt-nearmiss dt-hidden" picking-mode="Ignore" />
 
+        <!-- Pre-run 3-2-1-GO countdown, hidden by default -->
+        <ui:Label name="dt-countdown" text="3" class="dt-countdown dt-hidden" picking-mode="Ignore" />
+
     </ui:VisualElement>
 </ui:UXML>

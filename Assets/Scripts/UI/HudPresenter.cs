@@ -25,6 +25,7 @@ public class HudPresenter : MonoBehaviour
     private Label distanceLabel;
     private Label multiplierLabel;
     private Label nearMissLabel;
+    private Label countdownLabel;
     private Button pauseButton;
 
     /// <summary>Handle to the pending hide-flash task so repeated near-misses reset the timer.</summary>
@@ -39,6 +40,7 @@ public class HudPresenter : MonoBehaviour
         distanceLabel = root.Q<Label>("dt-distance");
         multiplierLabel = root.Q<Label>("dt-multiplier");
         nearMissLabel = root.Q<Label>("dt-nearmiss");
+        countdownLabel = root.Q<Label>("dt-countdown");
         pauseButton = root.Q<Button>("dt-pause-btn");
 
         if (pauseButton != null)
@@ -50,12 +52,15 @@ public class HudPresenter : MonoBehaviour
         GameSignals.DistanceChanged += OnDistanceChanged;
         GameSignals.MultiplierChanged += OnMultiplierChanged;
         GameSignals.NearMiss += OnNearMiss;
+        GameSignals.CountdownTick += OnCountdownTick;
+        GameSignals.CountdownGo += OnCountdownGo;
 
         // Reset to a clean visual state.
         SetText(scoreLabel, "0");
         SetText(distanceLabel, "0 m");
         Hide(nearMissLabel);
         Hide(multiplierLabel);
+        Hide(countdownLabel);
     }
 
     private void OnDisable()
@@ -69,8 +74,34 @@ public class HudPresenter : MonoBehaviour
         GameSignals.DistanceChanged -= OnDistanceChanged;
         GameSignals.MultiplierChanged -= OnMultiplierChanged;
         GameSignals.NearMiss -= OnNearMiss;
+        GameSignals.CountdownTick -= OnCountdownTick;
+        GameSignals.CountdownGo -= OnCountdownGo;
 
         nearMissHideTask = null;
+    }
+
+    // ── Countdown ───────────────────────────────────────────────────────────
+    private void OnCountdownTick(int secondsRemaining)
+    {
+        if (countdownLabel == null)
+        {
+            return;
+        }
+
+        SetText(countdownLabel, secondsRemaining.ToString(CultureInfo.InvariantCulture));
+        Show(countdownLabel);
+    }
+
+    private void OnCountdownGo()
+    {
+        if (countdownLabel == null)
+        {
+            return;
+        }
+
+        SetText(countdownLabel, "GO!");
+        Show(countdownLabel);
+        countdownLabel.schedule.Execute(() => Hide(countdownLabel)).StartingIn(600);
     }
 
     private void OnPauseClicked()

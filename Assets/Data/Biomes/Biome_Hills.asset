@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 371a7d798f6d9bd4e829871b9e61048c, type: 3}
+  m_Name: Biome_Hills
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeData
+  biomeName: Hills
+  startDistance: 1200
+  transitionLength: 120
+  asphaltMaterial: {fileID: 2100000, guid: c112110844ec1394e82f715735b6bdd7, type: 2}
+  kerbMaterial: {fileID: 2100000, guid: 561e1ce6eeb19204a9009610e829406d, type: 2}
+  fogColor: {r: 0.4, g: 0.42, b: 0.28, a: 1}
+  fogDensity: 0.005
+  ambientSkyColor: {r: 0.35, g: 0.4, b: 0.3, a: 1}
+  ambientEquatorColor: {r: 0.22, g: 0.26, b: 0.18, a: 1}
+  groundMaterial: {fileID: 2100000, guid: bb68b5a4ae9f694478da898cb8d77a87, type: 2}
+  skyboxMaterial: {fileID: 2100000, guid: 7f9fcdafe03896c4f802f5415113c54b, type: 2}
+  roadWidthMultiplier: 1
+  curvatureMultiplier: 1
+  postProcessProfile: {fileID: 0}
