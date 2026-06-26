@@ -409,8 +409,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1446299274}
-  - component: {fileID: 1446299273}
-  - component: {fileID: 1446299272}
+  - component: {fileID: 1446299275}
   m_Layer: 0
   m_Name: TrafficSystem
   m_TagString: Untagged
@@ -418,47 +417,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1446299272
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1446299271}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bbdf900de5137924ebbbe8e5ae9973eb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TrafficSpawner
-  road: {fileID: 997332217}
-  pool: {fileID: 1446299273}
-  player: {fileID: 1034080785}
-  laneWidth: 3.5
-  edgePadding: 0.25
-  maxActiveCount: 9
-  spawnAheadMin: 120
-  spawnAheadMax: 205
-  recycleBehindDistance: 75
-  minLaneSpacing: 24
-  spawnTriesPerFrame: 4
-  forwardSpeedMps: {x: 12, y: 19}
-  oncomingSpeedMps: {x: 15, y: 24}
---- !u!114 &1446299273
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1446299271}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5355be69b252c24d8aa48cf51c016cc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TrafficPool
-  agentPrefab: {fileID: 2675672534395258400, guid: 095856da6a4108842983e7930f08e76f,
-    type: 3}
-  initialSize: 6
-  container: {fileID: 0}
 --- !u!4 &1446299274
 Transform:
   m_ObjectHideFlags: 0
@@ -474,6 +432,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1446299275
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1446299271}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11df2ae3fb9cbb8449f3597637efb58a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TrafficDirector
+  road: {fileID: 997332217}
+  player: {fileID: 1034080785}
+  container: {fileID: 0}
+  vehicleTypes:
+  - {fileID: 11400000, guid: b953f6621cca0ff48b1b0556c8789b7c, type: 2}
+  - {fileID: 11400000, guid: dc8f8f09cf39e914783115daa2769644, type: 2}
+  laneWidth: 3.5
+  edgePadding: 0.6
+  spawnAheadMin: 110
+  spawnAheadMax: 200
+  recycleBehind: 70
+  minGapInLane: 24
+  maxActive: 16
+  density: 0.6
+  spawnsPerFrame: 2
+  followGap: 1
+  followDistance: 16
+  minOpenForwardLanes: 1
+  fairnessBand: 26
 --- !u!1001 &1480305836
 PrefabInstance:
   m_ObjectHideFlags: 0

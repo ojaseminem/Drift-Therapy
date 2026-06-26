@@ -4,13 +4,13 @@ using UnityEngine;
 public class TrafficSpawnerOffsetTests
 {
     GameObject root;
-    TrafficSpawner spawner;
+    TrafficDirector director;
 
     [SetUp]
     public void SetUp()
     {
-        root = new GameObject("TrafficSpawnerRoot");
-        spawner = root.AddComponent<TrafficSpawner>();
+        root = new GameObject("TrafficDirectorRoot");
+        director = root.AddComponent<TrafficDirector>();
     }
 
     [TearDown]
@@ -24,31 +24,35 @@ public class TrafficSpawnerOffsetTests
     {
         foreach (float halfWidth in new[] { 3.5f, 7f, 14f, 1.5f, 10f })
         {
-            int lanes = spawner.LaneCount(halfWidth);
+            int lanes = director.LaneCount(halfWidth);
             Assert.That(lanes, Is.GreaterThanOrEqualTo(2), $"halfWidth {halfWidth}");
             Assert.That(lanes % 2, Is.EqualTo(0), $"halfWidth {halfWidth} lanes {lanes}");
         }
     }
 
     [Test]
-    public void Wider_road_has_at_least_as_many_lanes()
+    public void Lane_count_matches_design_width()
     {
-        Assert.That(spawner.LaneCount(14f), Is.GreaterThanOrEqualTo(spawner.LaneCount(7f)));
-        Assert.That(spawner.LaneCount(7f), Is.GreaterThanOrEqualTo(spawner.LaneCount(3.5f)));
+        Assert.AreEqual(2, director.LaneCount(3.5f));   // 2-lane
+        Assert.AreEqual(4, director.LaneCount(7f));     // 4-lane
+        Assert.AreEqual(8, director.LaneCount(14f));    // 8-lane
     }
 
     [Test]
-    public void LaneOffsets_stay_within_road_bounds()
+    public void Wider_road_has_at_least_as_many_lanes()
+    {
+        Assert.That(director.LaneCount(14f), Is.GreaterThanOrEqualTo(director.LaneCount(7f)));
+        Assert.That(director.LaneCount(7f), Is.GreaterThanOrEqualTo(director.LaneCount(3.5f)));
+    }
+
+    [Test]
+    public void Lane_offsets_stay_within_road_bounds()
     {
         foreach (float halfWidth in new[] { 3.5f, 7f, 14f })
         {
-            int lanes = spawner.LaneCount(halfWidth);
-            for (int lane = 0; lane < lanes; lane++)
-            {
-                float offset = spawner.LaneOffset(lane, lanes, halfWidth);
-                Assert.That(offset, Is.InRange(-halfWidth, halfWidth),
-                    $"halfWidth {halfWidth} lane {lane}");
-            }
+            director.BuildLanes(halfWidth);
+            foreach (var lane in director.Lanes)
+                Assert.That(lane.Offset, Is.InRange(-halfWidth, halfWidth), $"halfWidth {halfWidth}");
         }
     }
 
@@ -57,14 +61,12 @@ public class TrafficSpawnerOffsetTests
     {
         foreach (float halfWidth in new[] { 3.5f, 7f, 14f })
         {
-            int lanes = spawner.LaneCount(halfWidth);
-            bool hasOncoming = false; // negative offset
-            bool hasForward = false;  // positive offset
-            for (int lane = 0; lane < lanes; lane++)
+            director.BuildLanes(halfWidth);
+            bool hasOncoming = false, hasForward = false;
+            foreach (var lane in director.Lanes)
             {
-                float offset = spawner.LaneOffset(lane, lanes, halfWidth);
-                if (offset < 0f) hasOncoming = true;
-                if (offset > 0f) hasForward = true;
+                if (lane.Direction < 0) hasOncoming = true;
+                if (lane.Direction > 0) hasForward = true;
             }
             Assert.IsTrue(hasOncoming, $"halfWidth {halfWidth} should have an oncoming lane");
             Assert.IsTrue(hasForward, $"halfWidth {halfWidth} should have a forward lane");

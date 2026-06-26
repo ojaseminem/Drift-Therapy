@@ -20,8 +20,6 @@ public class GameController : MonoBehaviour
     [SerializeField] HyperDriftCarController car;
     [SerializeField] RoadSegmentPool road;
     [SerializeField] Transform player;
-    [Tooltip("Optional — traffic ticking is handled by its own Update; null is fine.")]
-    [SerializeField] TrafficSpawner trafficSpawner;
     [SerializeField] PlayerCollisionDetector collisionDetector;
     [SerializeField] NearMissDetector nearMissDetector;
     [Tooltip("Optional — drives road difficulty from distance. Null is fine.")]

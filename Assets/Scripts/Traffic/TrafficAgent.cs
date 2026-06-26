@@ -1,52 +1,83 @@
 using UnityEngine;
 
+/// <summary>
+/// A single traffic vehicle. Pure data + transform follower — all decisions
+/// (lane, speed, spacing) are made by the <see cref="TrafficDirector"/>. The
+/// agent just advances along the road spline each frame and keeps itself inside
+/// its lane. Kinematic, allocation-free.
+/// </summary>
 [DisallowMultipleComponent]
 public class TrafficAgent : MonoBehaviour
 {
-    [SerializeField] float speedMps = 18f;
-    [SerializeField] float bodyLength = 4.5f;
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+    static readonly int ColorId     = Shader.PropertyToID("_Color");
 
-    Rigidbody cachedRigidbody;
+    Rigidbody body;
+    Renderer[] renderers;
+    MaterialPropertyBlock mpb;
 
-    public float SpeedMps => speedMps;
-    public float BodyLength => bodyLength;
+    public TrafficVehicleType Type { get; private set; }
+    public int   Direction   { get; private set; } = 1;   // +1 with road, -1 oncoming
     public float ArcDistance { get; private set; }
-    public float LateralOffset { get; private set; }
+    public float LaneOffset  { get; private set; }
+    public float Speed       { get; private set; }
+    public float Length      => Type != null ? Type.length : 4.5f;
+    public float HalfWidth   => Type != null ? Type.halfWidth : 0.9f;
 
-    /// <summary>+1 = travels with the road (player overtakes), -1 = oncoming.</summary>
-    public int Direction { get; private set; } = 1;
-
-    void Awake()
+    /// <summary>One-time setup when the instance is created by the pool.</summary>
+    public void Init(TrafficVehicleType type)
     {
-        cachedRigidbody = GetComponent<Rigidbody>();
-        if (cachedRigidbody)
+        Type = type;
+        body = GetComponent<Rigidbody>();
+        if (body)
         {
-            cachedRigidbody.isKinematic = true;
-            cachedRigidbody.interpolation = RigidbodyInterpolation.Interpolate;
+            body.isKinematic = true;
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+        }
+        renderers = GetComponentsInChildren<Renderer>(true);
+        mpb = new MaterialPropertyBlock();
+    }
+
+    /// <summary>Place the agent at the start of its life.</summary>
+    public void Spawn(float arcDistance, float laneOffset, int direction, float speed)
+    {
+        ArcDistance = arcDistance;
+        LaneOffset  = laneOffset;
+        Direction   = direction >= 0 ? 1 : -1;
+        Speed       = speed;
+    }
+
+    /// <summary>Tint the body via MaterialPropertyBlock (no material instances).</summary>
+    public void ApplyColor(Color color)
+    {
+        if (renderers == null) return;
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            var r = renderers[i];
+            if (!r) continue;
+            r.GetPropertyBlock(mpb);
+            mpb.SetColor(BaseColorId, color);
+            mpb.SetColor(ColorId, color);
+            r.SetPropertyBlock(mpb);
         }
     }
 
-    public void Configure(float arcDistance, float lateralOffset, float speed, int direction)
+    /// <summary>
+    /// Advance along the road. <paramref name="speedCap"/>, when set, limits speed
+    /// this frame (used for follow-gap behaviour). Returns false if the agent fell
+    /// off the end of the built spline and should be recycled.
+    /// </summary>
+    public bool Advance(RoadSegmentPool road, float deltaTime, float? speedCap)
     {
-        ArcDistance = arcDistance;
-        LateralOffset = lateralOffset;
-        speedMps = speed;
-        Direction = direction >= 0 ? 1 : -1;
-    }
-
-    public bool Tick(RoadSegmentPool road, float deltaTime)
-    {
-        // Forward agents advance along the arc; oncoming agents move back toward the player.
-        ArcDistance += Direction * speedMps * deltaTime;
+        float v = speedCap.HasValue ? Mathf.Min(Speed, speedCap.Value) : Speed;
+        ArcDistance += Direction * v * deltaTime;
 
         if (!road.TrySampleAtArcDistance(ArcDistance, out var sample))
             return false;
 
-        // Keep the car on the road even as the road width changes underneath it.
-        float maxOffset = Mathf.Max(0f, sample.HalfWidth - 0.6f);
-        float offset = Mathf.Clamp(LateralOffset, -maxOffset, maxOffset);
+        float maxOffset = Mathf.Max(0f, sample.HalfWidth - HalfWidth - 0.1f);
+        float offset = Mathf.Clamp(LaneOffset, -maxOffset, maxOffset);
 
-        // Oncoming traffic faces the opposite way down the road.
         Quaternion rotation = Direction < 0
             ? sample.Rotation * Quaternion.Euler(0f, 180f, 0f)
             : sample.Rotation;
