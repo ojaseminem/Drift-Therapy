@@ -64,6 +64,11 @@ sysinfo.txt
 *.unitypackage.meta
 *.app
 
+# Android release signing secrets
+/[Bb]uild[Ss]ecrets/
+*.keystore
+*.jks
+
 # Crashlytics generated file
 crashlytics-build.properties
 

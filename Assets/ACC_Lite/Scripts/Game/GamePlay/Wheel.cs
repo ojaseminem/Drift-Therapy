@@ -17,6 +17,7 @@ public struct Wheel
 	public float CurrentMaxSlip { get { return Mathf.Max (CurrentForwardSleep, CurrentSidewaysSleep); } }
 	public float CurrentForwardSleep { get; private set; }
 	public float CurrentSidewaysSleep { get; private set; }
+	public bool TrailFxActive { get { return Trail != null; } }
 	public WheelHit GetHit { get { return Hit; } }
 
 	WheelHit Hit;

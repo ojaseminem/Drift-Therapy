@@ -7,6 +7,8 @@ namespace DriftTherapy
     /// <summary>Result of the most recent run, shown on the end screen.</summary>
     public struct RunResult
     {
+        public float distanceMeters;
+        public float bestDistanceMeters;
         public int score;
         public int best;
         public int coins;
@@ -24,11 +26,13 @@ namespace DriftTherapy
         public int xp;
         public int level = 1;
         public int highScore;
+        public float bestDistanceMeters;
         public string selectedVehicleId = "";
         public List<string> ownedVehicleIds = new List<string>();
         public float musicVolume = 1f;
         public float sfxVolume = 1f;
         public bool haptics = true;
+        public bool welcomed;
     }
 
     /// <summary>
@@ -58,6 +62,15 @@ namespace DriftTherapy
             Instance = this;
             DontDestroyOnLoad(gameObject);
             Load();
+
+            // One-time welcome grant so the garage/economy is usable from the start.
+            if (!Data.welcomed)
+            {
+                Data.welcomed = true;
+                Data.coins += 1500;
+                Data.gems += 20;
+                Save();
+            }
         }
 
         // ── Persistence ──────────────────────────────────────────────────────
@@ -66,6 +79,10 @@ namespace DriftTherapy
             string json = PlayerPrefs.GetString(SaveKey, "");
             Data = string.IsNullOrEmpty(json) ? new PlayerData() : JsonUtility.FromJson<PlayerData>(json);
             EnsureDefaults();
+            if (Data.bestDistanceMeters <= 0f && Data.highScore > 0)
+            {
+                Data.bestDistanceMeters = Data.highScore;
+            }
         }
 
         public void Save()
@@ -155,16 +172,25 @@ namespace DriftTherapy
         public RunResult LastRun { get; private set; }
 
         /// <summary>Apply the results of a finished run, store the summary, and persist.</summary>
-        public void SubmitRun(int score, int coinsEarned, int xpEarned)
+        public void SubmitRun(float distanceMeters, int coinsEarned, int xpEarned)
         {
-            bool newBest = score > Data.highScore;
-            if (newBest) Data.highScore = score;
+            float previousBestDistance = Mathf.Max(0f, Data.bestDistanceMeters);
+            bool newBest = distanceMeters > previousBestDistance;
+            if (newBest)
+            {
+                Data.bestDistanceMeters = distanceMeters;
+            }
+
+            Data.highScore = Mathf.Max(Data.highScore, Mathf.RoundToInt(Data.bestDistanceMeters));
             AddCoins(coinsEarned);
             AddXp(xpEarned);
             Save();
             LastRun = new RunResult
             {
-                score = score, best = Data.highScore,
+                distanceMeters = distanceMeters,
+                bestDistanceMeters = Data.bestDistanceMeters,
+                score = Mathf.RoundToInt(distanceMeters),
+                best = Mathf.RoundToInt(Data.bestDistanceMeters),
                 coins = coinsEarned, xp = xpEarned, isNewBest = newBest
             };
         }

@@ -20,14 +20,15 @@ public class GameController : MonoBehaviour
     [SerializeField] HyperDriftCarController car;
     [SerializeField] RoadSegmentPool road;
     [SerializeField] Transform player;
-    [SerializeField] PlayerCollisionDetector collisionDetector;
-    [SerializeField] NearMissDetector nearMissDetector;
+    [SerializeField] TrafficSensor sensor;
     [Tooltip("Optional — drives road difficulty from distance. Null is fine.")]
     [SerializeField] DifficultyDirector difficulty;
 
     [Header("Run Tuning")]
     [SerializeField] int reviveCount = 1;
     [SerializeField] bool autoStartOnLoad = true;
+    [Tooltip("Once moving, if damage drags speed below this the run ends (stalled).")]
+    [SerializeField] float minGameOverSpeedKph = 25f;
     [Tooltip("Seconds of 3-2-1 countdown before the run begins (and car unlocks).")]
     [SerializeField] int countdownSeconds = 3;
 
@@ -36,11 +37,28 @@ public class GameController : MonoBehaviour
     [SerializeField] float multiplierStep = 0.5f;
     [SerializeField] int nearMissBonus = 250;
 
+    [Header("Vehicle / Economy / Boost")]
+    [SerializeField] VehicleHealth vehicle;
+    [SerializeField] float driftCoinRate = 0.6f;            // pending drift coins per drift metre
+    [SerializeField] float driftCommitGraceSeconds = 0.75f;
+    [SerializeField] int nearMissDriftCoins = 5;
+    [SerializeField] float boostFillPerDriftMetre = 0.004f;
+    [SerializeField] float boostFillPerNearMiss = 0.12f;
+    [SerializeField] float boostDuration = 2.5f;
+
+    int driftCoinsTotal;
+    float driftCoinsPendingRaw;
+    float driftTrailInactiveTime;
+    float boostFill;
+    public float BoostFill01 => boostFill;
+    public int DriftCoinsTotal => driftCoinsTotal;
+
     RunStateMachine runState;
     ScoreSystem score;
 
     float lastDistance;
     int bestScore;
+    float bestDistanceMeters;
     bool paused;
     Coroutine countdownRoutine;
 
@@ -52,6 +70,11 @@ public class GameController : MonoBehaviour
 
         // Track best ourselves: ScoreSystem.BestScore is in-memory only.
         bestScore = Mathf.Max(SaveService.GetBestScore(), score.BestScore);
+        bestDistanceMeters = GameApp.Instance != null
+            ? Mathf.Max(0f, GameApp.Instance.Data.bestDistanceMeters)
+            : Mathf.Max(0f, SaveService.GetBestScore());
+
+        if (!vehicle && player != null) vehicle = player.GetComponent<VehicleHealth>();
     }
 
     void OnEnable()
@@ -72,15 +95,17 @@ public class GameController : MonoBehaviour
         // Score → controller.
         score.ScoreChanged += HandleScoreChanged;
 
-        // Detectors → controller.
-        if (collisionDetector != null)
+        // Sensor → controller.
+        if (sensor != null)
         {
-            collisionDetector.Hit += HandleCollisionHit;
+            sensor.Hit += HandleCollisionHit;
+            sensor.NearMissed += HandleNearMissed;
         }
 
-        if (nearMissDetector != null)
+        if (vehicle != null)
         {
-            nearMissDetector.NearMissed += HandleNearMissed;
+            vehicle.Totaled += HandleTotaled;
+            vehicle.HealthChanged += GameSignals.RaiseHealthChanged;
         }
     }
 
@@ -105,14 +130,16 @@ public class GameController : MonoBehaviour
             score.ScoreChanged -= HandleScoreChanged;
         }
 
-        if (collisionDetector != null)
+        if (sensor != null)
         {
-            collisionDetector.Hit -= HandleCollisionHit;
+            sensor.Hit -= HandleCollisionHit;
+            sensor.NearMissed -= HandleNearMissed;
         }
 
-        if (nearMissDetector != null)
+        if (vehicle != null)
         {
-            nearMissDetector.NearMissed -= HandleNearMissed;
+            vehicle.Totaled -= HandleTotaled;
+            vehicle.HealthChanged -= GameSignals.RaiseHealthChanged;
         }
     }
 
@@ -155,6 +182,7 @@ public class GameController : MonoBehaviour
         Time.timeScale = 1f;
         paused = false;
         if (car != null) car.ControlsEnabled = false;
+        ResetRunSystems();
 
         GameSignals.RaiseRunReady();
 
@@ -185,6 +213,17 @@ public class GameController : MonoBehaviour
             return;
         }
 
+        bool trailFxActive = car != null && car.TrailFxActive;
+
+        // Stall-out: when damage has capped the car's top speed below the floor it can no
+        // longer keep going. Uses the damage-capped target (not instantaneous speed), so
+        // hard drifting that momentarily scrubs speed never triggers a false game over.
+        if (car != null && car.TargetSpeedKph < minGameOverSpeedKph)
+        {
+            runState.FailRun("stalled");
+            return;
+        }
+
         float total = road.DistanceTravelled;
         float delta = total - lastDistance;
 
@@ -192,17 +231,41 @@ public class GameController : MonoBehaviour
         {
             score.AddDistance(delta);
 
-            if (car != null && car.DriftActive)
+            if (trailFxActive)
             {
                 score.BuildDriftCombo(delta);
+                driftCoinsPendingRaw += delta * driftCoinRate;
+                driftTrailInactiveTime = 0f;
+                boostFill = Mathf.Min(1f, boostFill + delta * boostFillPerDriftMetre);
+                GameSignals.RaiseBoostChanged(boostFill);
+                GameSignals.RaiseDriftCoinsChanged(driftCoinsTotal, GetPendingDriftCoins());
             }
             else
             {
-                score.ResetCombo();
+                if (score.ComboCount > 0 || driftCoinsPendingRaw > 0f)
+                {
+                    driftTrailInactiveTime += Time.deltaTime;
+                    if (driftTrailInactiveTime >= driftCommitGraceSeconds)
+                    {
+                        CommitDriftCombo();
+                    }
+                }
             }
 
             GameSignals.RaiseDistanceChanged(total);
             GameSignals.RaiseMultiplierChanged(score.DriftMultiplier, score.ComboCount);
+        }
+        else if (!trailFxActive && (score.ComboCount > 0 || driftCoinsPendingRaw > 0f))
+        {
+            driftTrailInactiveTime += Time.deltaTime;
+            if (driftTrailInactiveTime >= driftCommitGraceSeconds)
+            {
+                CommitDriftCombo();
+            }
+        }
+        else if (trailFxActive)
+        {
+            driftTrailInactiveTime = 0f;
         }
 
         if (difficulty != null)
@@ -225,24 +288,11 @@ public class GameController : MonoBehaviour
 
     void HandleRestartRequested()
     {
-        // Make restart feel instant: tear down, re-arm, and immediately run again.
+        // Clean, reliable restart: reload the gameplay scene from scratch (fresh car,
+        // road, traffic, countdown). Restore timescale first so the reload isn't frozen.
         Time.timeScale = 1f;
         paused = false;
-
-        runState.RequestRestart();   // → Restarting (fires RestartRequested)
-        score.ResetRun();
-
-        if (difficulty != null)
-        {
-            difficulty.ResetDifficulty();
-        }
-
-        lastDistance = road != null ? road.DistanceTravelled : 0f;
-
-        runState.MarkRestarted();    // → Ready
-        runState.StartRun();         // → Running
-
-        GameSignals.RaiseScoreChanged(score.CurrentScore, bestScore);
+        SceneFlow.Reload();
     }
 
     void HandleReviveRequested()
@@ -254,9 +304,9 @@ public class GameController : MonoBehaviour
         }
 
         // Brief invuln so the same traffic does not instantly re-kill.
-        if (collisionDetector != null)
+        if (sensor != null)
         {
-            collisionDetector.StartGrace();
+            sensor.StartGrace();
         }
 
         // Resume the run (Reviving → Running) and announce it.
@@ -326,23 +376,24 @@ public class GameController : MonoBehaviour
 
     void HandleRunFailed(string reason)
     {
+        CommitDriftCombo();
         score.FinalizeRun();
 
-        int final = score.FinalScore;
+        float finalDistance = road != null ? road.DistanceTravelled : lastDistance;
+        int final = Mathf.RoundToInt(finalDistance);
 
-        // Reward: coins scale with score, XP a touch slower. Banked to the wallet.
-        int coins = Mathf.Max(0, Mathf.RoundToInt(final * 0.10f));
-        int xp    = Mathf.Max(1, Mathf.RoundToInt(final * 0.05f));
+        int coins = driftCoinsTotal;
+        int xp    = Mathf.Max(1, Mathf.RoundToInt(finalDistance * 0.05f));
 
         if (GameApp.Instance != null)
         {
-            GameApp.Instance.SubmitRun(final, coins, xp);
-            bestScore = GameApp.Instance.Data.highScore;
+            GameApp.Instance.SubmitRun(finalDistance, coins, xp);
+            bestDistanceMeters = GameApp.Instance.Data.bestDistanceMeters;
         }
-        else if (final > bestScore)
+        else if (finalDistance > bestDistanceMeters)
         {
-            bestScore = final;
-            SaveService.SetBestScore(bestScore);
+            bestDistanceMeters = finalDistance;
+            SaveService.SetBestScore(Mathf.RoundToInt(bestDistanceMeters));
             SaveService.Save();
         }
 
@@ -386,10 +437,70 @@ public class GameController : MonoBehaviour
     // ── Detector handlers ───────────────────────────────────────────────────
     void HandleCollisionHit(GameObject trafficGo)
     {
-        if (runState.CurrentState == RunState.Running)
+        if (runState.CurrentState != RunState.Running) return;
+
+        // Any tight traffic overlap is a crash. Near-misses are handled separately by TrafficSensor.
+        var agent = trafficGo != null ? trafficGo.GetComponentInParent<TrafficAgent>() : null;
+        if (agent != null)
+        {
+            runState.FailRun("crash");
+            return;
+        }
+
+        if (vehicle != null)
+        {
+            vehicle.TakeDamage(vehicle.DamagePerHit);
+            GameSignals.RaiseDamaged();
+        }
+        else
         {
             runState.FailRun("collision");
         }
+    }
+
+    void HandleTotaled()
+    {
+        if (runState.CurrentState == RunState.Running)
+            runState.FailRun("totaled");
+    }
+
+    void CommitDriftCombo()
+    {
+        if (score.ComboCount <= 0 && driftCoinsPendingRaw <= 0f)
+        {
+            return;
+        }
+
+        if (driftCoinsPendingRaw > 0f)
+        {
+            driftCoinsTotal += Mathf.RoundToInt(driftCoinsPendingRaw * score.DriftMultiplier);
+        }
+
+        driftCoinsPendingRaw = 0f;
+        driftTrailInactiveTime = 0f;
+        score.ResetCombo();
+        GameSignals.RaiseDriftCoinsChanged(driftCoinsTotal, 0);
+    }
+
+    /// <summary>Spend a full boost meter for a speed surge + brief invulnerability.</summary>
+    public void ActivateBoost()
+    {
+        if (boostFill < 0.999f || car == null) return;
+        car.ActivateBoost(boostDuration);
+        if (vehicle != null) vehicle.GrantGrace(boostDuration);
+        boostFill = 0f;
+        GameSignals.RaiseBoostChanged(0f);
+    }
+
+    void ResetRunSystems()
+    {
+        if (vehicle != null) vehicle.ResetHealth();
+        driftCoinsTotal = 0;
+        driftCoinsPendingRaw = 0f;
+        driftTrailInactiveTime = 0f;
+        boostFill = 0f;
+        GameSignals.RaiseDriftCoinsChanged(0, 0);
+        GameSignals.RaiseBoostChanged(0f);
     }
 
     void HandleNearMissed(TrafficAgent agent)
@@ -400,7 +511,21 @@ public class GameController : MonoBehaviour
         }
 
         score.RegisterNearMiss();
+        boostFill = Mathf.Min(1f, boostFill + boostFillPerNearMiss);
+        GameSignals.RaiseBoostChanged(boostFill);
+        driftCoinsTotal += nearMissDriftCoins;
+        GameSignals.RaiseDriftCoinsChanged(driftCoinsTotal, GetPendingDriftCoins());
         GameSignals.RaiseNearMiss();
+    }
+
+    int GetPendingDriftCoins()
+    {
+        if (driftCoinsPendingRaw <= 0f)
+        {
+            return 0;
+        }
+
+        return Mathf.RoundToInt(driftCoinsPendingRaw * score.DriftMultiplier);
     }
 }
 }

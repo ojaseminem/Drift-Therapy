@@ -35,11 +35,49 @@ public class HyperDriftCarController : MonoBehaviour
     [Header("Compatibility")]
     [SerializeField] bool disableLegacyUserControl = true;
 
+    [Header("Damage & Boost")]
+    [SerializeField] float damageSpeedPenalty = 0.30f;   // top speed fraction lost when fully wrecked
+    [SerializeField] float damageSteerWobble  = 0.16f;   // involuntary steer drift when damaged
+    [SerializeField] float boostSpeedBonusKph = 30f;
+
+    float damageT;     // 0 healthy .. 1 wrecked
+    float boostTimer;  // seconds of boost remaining
+
+    public bool IsBoosting => boostTimer > 0f;
+    public void SetDamage01(float t) => damageT = Mathf.Clamp01(t);
+    public void ActivateBoost(float seconds) => boostTimer = Mathf.Max(boostTimer, seconds);
+    float EffectiveTargetSpeed => targetSpeedKph * (1f - damageT * damageSpeedPenalty)
+                                  + (IsBoosting ? boostSpeedBonusKph : 0f);
+
+    /// <summary>Damage-capped target speed (kph). Drops only with damage, not drift dips.</summary>
+    public float TargetSpeedKph => EffectiveTargetSpeed;
+
     CarController car;
     float steering;
     bool driftActive;
 
     public bool DriftActive => driftActive;
+    public bool TrailFxActive
+    {
+        get
+        {
+            if (car == null || car.Wheels == null)
+            {
+                return false;
+            }
+
+            var wheels = car.Wheels;
+            for (int i = 0; i < wheels.Length; i++)
+            {
+                if (wheels[i].TrailFxActive)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
     public float SpeedKph => car != null ? car.SpeedInHour : 0f;
 
     /// <summary>
@@ -94,6 +132,10 @@ public class HyperDriftCarController : MonoBehaviour
         float targetSteer = Mathf.Clamp(inputReader.Steering, -maxSteerInput, maxSteerInput);
         steering = Mathf.MoveTowards(steering, targetSteer, steerResponse * Time.deltaTime);
 
+        if (boostTimer > 0f) boostTimer -= Time.deltaTime;
+        if (damageT > 0.01f)
+            steering = Mathf.Clamp(steering + Mathf.Sin(Time.time * 5.5f) * damageT * damageSteerWobble, -1f, 1f);
+
         float throttle = GetThrottleForTargetSpeed();
         bool driftIntent = inputReader.IsSteeringInputActive && Mathf.Abs(steering) >= driftSteerThreshold;
         driftActive = driftIntent && car.SpeedInHour >= minSpeedForDriftKph;
@@ -104,7 +146,7 @@ public class HyperDriftCarController : MonoBehaviour
 
     float GetThrottleForTargetSpeed()
     {
-        float speedError = targetSpeedKph - car.SpeedInHour;
+        float speedError = EffectiveTargetSpeed - car.SpeedInHour;
         if (speedError < -coastAboveTargetKph)
         {
             return 0f;

@@ -59,6 +59,9 @@ public class TrafficDirector : MonoBehaviour
     readonly List<TrafficAgent> active = new List<TrafficAgent>(32);
     readonly List<Lane> lanes = new List<Lane>(8);
 
+    /// <summary>Currently-active traffic agents (read-only; for the proximity sensor).</summary>
+    public IReadOnlyList<TrafficAgent> Active => active;
+
     float totalWeight;
 
     void Awake()

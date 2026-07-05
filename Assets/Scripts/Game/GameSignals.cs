@@ -52,6 +52,18 @@ public static class GameSignals
     /// <summary>Countdown finished — the run is going. ("GO!")</summary>
     public static event Action CountdownGo;
 
+    // ── Vehicle / economy (gameplay → listeners) ────────────────────────────
+    /// <summary>Vehicle health changed, 0..1.</summary>
+    public static event Action<float> HealthChanged;
+    /// <summary>Took collision damage (for shake/flash feedback).</summary>
+    public static event Action Damaged;
+    /// <summary>Drift coins changed. (committed total this run, live pending combo)</summary>
+    public static event Action<int, int> DriftCoinsChanged;
+    /// <summary>Boost meter changed, 0..1.</summary>
+    public static event Action<float> BoostChanged;
+    /// <summary>A mechanic collectible was picked up (repairs the vehicle).</summary>
+    public static event Action Collected;
+
     // ── Intents (UI → GameController) ───────────────────────────────────────
     /// <summary>Player asked to start the run (tap to start).</summary>
     public static event Action StartRequested;
@@ -83,6 +95,11 @@ public static class GameSignals
     public static void RaiseDifficultyChanged(float t01) => DifficultyChanged?.Invoke(t01);
     public static void RaiseCountdownTick(int secondsRemaining) => CountdownTick?.Invoke(secondsRemaining);
     public static void RaiseCountdownGo() => CountdownGo?.Invoke();
+    public static void RaiseHealthChanged(float health01) => HealthChanged?.Invoke(health01);
+    public static void RaiseDamaged() => Damaged?.Invoke();
+    public static void RaiseDriftCoinsChanged(int total, int pending) => DriftCoinsChanged?.Invoke(total, pending);
+    public static void RaiseBoostChanged(float fill01) => BoostChanged?.Invoke(fill01);
+    public static void RaiseCollected() => Collected?.Invoke();
 
     // ── Raisers: intents ────────────────────────────────────────────────────
     public static void RaiseStartRequested() => StartRequested?.Invoke();
@@ -105,6 +122,8 @@ public static class GameSignals
         ScoreChanged = null; MultiplierChanged = null; DistanceChanged = null;
         NearMiss = null; DifficultyChanged = null;
         CountdownTick = null; CountdownGo = null;
+        HealthChanged = null; Damaged = null; DriftCoinsChanged = null;
+        BoostChanged = null; Collected = null;
         StartRequested = null; RestartRequested = null; ReviveRequested = null;
         PauseToggled = null; ResumeRequested = null; QuitRequested = null;
     }
