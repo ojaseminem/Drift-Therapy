@@ -520,12 +520,12 @@ public class GameController : MonoBehaviour
             return;
         }
 
-        score.RegisterNearMiss();
+        score.RegisterNearMiss(Time.time);
         boostFill = Mathf.Min(1f, boostFill + boostFillPerNearMiss);
         GameSignals.RaiseBoostChanged(boostFill);
         driftCoinsTotal += nearMissDriftCoins;
         GameSignals.RaiseDriftCoinsChanged(driftCoinsTotal, GetPendingDriftCoins());
-        GameSignals.RaiseNearMiss();
+        GameSignals.RaiseNearMiss(score.NearMissChain);
     }
 
     int GetPendingDriftCoins()

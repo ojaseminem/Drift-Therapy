@@ -96,7 +96,18 @@ namespace DriftTherapy.EditorTools
             s.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight; s.matchWidthOrHeight = 0.5f;
             var es = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             es.transform.SetParent(root.transform, false);
-            return (root, (RectTransform)cgo.transform);
+
+            // Everything else parents under this safe-area child, not the raw
+            // Canvas — every existing Img(canvas,...)/Txt(canvas,...) call site
+            // automatically inherits notch/cutout/gesture-bar insets with zero
+            // changes elsewhere, since "canvas" now IS the safe area.
+            var safeAreaGo = new GameObject("SafeArea", typeof(RectTransform));
+            safeAreaGo.transform.SetParent(cgo.transform, false);
+            var safeAreaRt = (RectTransform)safeAreaGo.transform;
+            Stretch(safeAreaRt);
+            safeAreaGo.AddComponent<SafeAreaFitter>();
+
+            return (root, safeAreaRt);
         }
 
         static RectTransform Scrim(Transform p, out RectTransform card, float pad, float topPad)

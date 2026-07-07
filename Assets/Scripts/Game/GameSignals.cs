@@ -41,8 +41,8 @@ public static class GameSignals
     public static event Action<float, int> MultiplierChanged;
     /// <summary>Distance travelled this run changed, in metres.</summary>
     public static event Action<float> DistanceChanged;
-    /// <summary>A near-miss with traffic was registered.</summary>
-    public static event Action NearMiss;
+    /// <summary>A near-miss with traffic was registered. Payload = consecutive chain count (1 = first in a while).</summary>
+    public static event Action<int> NearMiss;
     /// <summary>Normalised difficulty (0..1) changed.</summary>
     public static event Action<float> DifficultyChanged;
 
@@ -91,7 +91,7 @@ public static class GameSignals
     public static void RaiseScoreChanged(int current, int best) => ScoreChanged?.Invoke(current, best);
     public static void RaiseMultiplierChanged(float multiplier, int comboCount) => MultiplierChanged?.Invoke(multiplier, comboCount);
     public static void RaiseDistanceChanged(float metres) => DistanceChanged?.Invoke(metres);
-    public static void RaiseNearMiss() => NearMiss?.Invoke();
+    public static void RaiseNearMiss(int chain) => NearMiss?.Invoke(chain);
     public static void RaiseDifficultyChanged(float t01) => DifficultyChanged?.Invoke(t01);
     public static void RaiseCountdownTick(int secondsRemaining) => CountdownTick?.Invoke(secondsRemaining);
     public static void RaiseCountdownGo() => CountdownGo?.Invoke();

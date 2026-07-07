@@ -136,6 +136,29 @@ namespace DriftTherapy
         static void SnapFill(RectTransform fill, float v) { if (fill) { var a = fill.anchorMax; a.x = Mathf.Clamp01(v); fill.anchorMax = a; } }
         void OnBoost(float b01) { SnapFill(boostFill, b01); if (boostButton) boostButton.interactable = b01 >= 0.999f; }
 
+        // Cosmetic combo-tier presentation (name + color) on top of ScoreSystem.ComboTier —
+        // pure presentation, does not affect scoring math.
+        static readonly Color ComboDriftColor = new Color(0.18f, 0.85f, 0.78f);
+        static readonly Color ComboChainColor = new Color(1f, 0.30f, 0.62f);
+        static readonly Color ComboInfernoColor = new Color(1f, 0.55f, 0.15f);
+        static readonly Color ComboLegendColor = new Color(1f, 0.80f, 0.20f);
+
+        static string ComboTierLabel(ScoreSystem.ComboTier t)
+        {
+            if (t == ScoreSystem.ComboTier.Chain) return "CHAIN";
+            if (t == ScoreSystem.ComboTier.Inferno) return "INFERNO";
+            if (t == ScoreSystem.ComboTier.Legend) return "LEGEND";
+            return "DRIFT";
+        }
+
+        static Color ComboTierColor(ScoreSystem.ComboTier t)
+        {
+            if (t == ScoreSystem.ComboTier.Chain) return ComboChainColor;
+            if (t == ScoreSystem.ComboTier.Inferno) return ComboInfernoColor;
+            if (t == ScoreSystem.ComboTier.Legend) return ComboLegendColor;
+            return ComboDriftColor;
+        }
+
         void OnMultiplier(float mult, int combo)
         {
             if (!multiplierText) return;
@@ -144,7 +167,9 @@ namespace DriftTherapy
             multiplierText.gameObject.SetActive(show);
             if (show)
             {
-                multiplierText.text = "x" + mult.ToString("0.0");
+                var tier = ScoreSystem.GetComboTier(combo);
+                multiplierText.text = ComboTierLabel(tier) + " x" + mult.ToString("0.0");
+                multiplierText.color = ComboTierColor(tier);
                 if (!wasShown) UiJuice.PunchScale(multiplierText.rectTransform, 0.2f);
             }
         }
@@ -167,9 +192,10 @@ namespace DriftTherapy
             Invoke(nameof(HideCountdown), 0.7f);
         }
         void HideCountdown() => Hide(countdownText);
-        void OnNearMiss()
+        void OnNearMiss(int chain)
         {
             if (!nearMissText) return;
+            nearMissText.text = chain > 1 ? "NEAR MISS x" + chain + "!" : "NEAR MISS!";
             Show(nearMissText);
             UiJuice.PunchScale(nearMissText.rectTransform, 0.25f);
             CancelInvoke(nameof(HideNearMiss));
@@ -239,6 +265,10 @@ namespace DriftTherapy
             }
         }
 
+        // TODO(Ads): Phase 4 interstitial landing spot — show a frequency-capped
+        // PlatformServices.Ads.ShowInterstitial(...) here before SceneFlow.GoToMenu()
+        // once a real ad network is wired. Keep Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md
+        // in sync with this call site.
         void GoHome() { Time.timeScale = 1f; GameSignals.RaiseQuitRequested(); SceneFlow.GoToMenu(); }
     }
 }

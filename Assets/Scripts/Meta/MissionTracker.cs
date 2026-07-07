@@ -51,7 +51,7 @@ namespace DriftTherapy
         }
 
         void HandleDistanceChanged(float metres) => peakDistanceThisRun = metres;
-        void HandleNearMiss() => nearMissCountThisRun++;
+        void HandleNearMiss(int chain) => nearMissCountThisRun++;
         void HandleMultiplierChanged(float mult, int combo) => peakComboThisRun = Mathf.Max(peakComboThisRun, combo);
 
         // Only the committed `total` is meaningful here — `pending` changes every

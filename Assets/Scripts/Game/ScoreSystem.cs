@@ -2,17 +2,26 @@ using System;
 
 public class ScoreSystem
 {
+    /// <summary>Cosmetic naming tier derived from <see cref="ComboCount"/> — presentation only, does not affect scoring math.</summary>
+    public enum ComboTier { None, Drift, Chain, Inferno, Legend }
+
     readonly float comboStepDistance;
     readonly float multiplierStep;
     readonly int nearMissBonus;
+    readonly int nearMissChainStep;
+    readonly float nearMissChainWindow;
 
     float comboDistance;
+    float lastNearMissTime = float.NegativeInfinity;
 
-    public ScoreSystem(float comboStepDistance = 25f, float multiplierStep = 0.5f, int nearMissBonus = 250)
+    public ScoreSystem(float comboStepDistance = 25f, float multiplierStep = 0.5f, int nearMissBonus = 250,
+        int nearMissChainStep = 100, float nearMissChainWindow = 3f)
     {
         this.comboStepDistance = comboStepDistance > 0f ? comboStepDistance : 25f;
         this.multiplierStep = multiplierStep > 0f ? multiplierStep : 0.5f;
         this.nearMissBonus = nearMissBonus > 0 ? nearMissBonus : 250;
+        this.nearMissChainStep = Math.Max(0, nearMissChainStep);
+        this.nearMissChainWindow = nearMissChainWindow > 0f ? nearMissChainWindow : 3f;
         DriftMultiplier = 1f;
     }
 
@@ -22,9 +31,22 @@ public class ScoreSystem
     public int BestScore { get; private set; }
     public int ComboCount { get; private set; }
     public float DriftMultiplier { get; private set; }
+    /// <summary>Consecutive near-misses registered within <see cref="nearMissChainWindow"/> seconds of each other.</summary>
+    public int NearMissChain { get; private set; }
     public int CurrentScore => DistanceScore + NearMissScore;
+    public ComboTier CurrentComboTier => GetComboTier(ComboCount);
 
     public event Action ScoreChanged;
+
+    /// <summary>Maps a combo count to its cosmetic tier. Thresholds are presentation-only.</summary>
+    public static ComboTier GetComboTier(int comboCount)
+    {
+        if (comboCount <= 0) return ComboTier.None;
+        if (comboCount < 3) return ComboTier.Drift;
+        if (comboCount < 6) return ComboTier.Chain;
+        if (comboCount < 10) return ComboTier.Inferno;
+        return ComboTier.Legend;
+    }
 
     public void AddDistance(float meters)
     {
@@ -72,9 +94,18 @@ public class ScoreSystem
         OnScoreChanged();
     }
 
-    public void RegisterNearMiss()
+    /// <summary>
+    /// Registers a near miss at <paramref name="atTime"/> (pass Time.time). Consecutive
+    /// near misses within <see cref="nearMissChainWindow"/> seconds of the previous one
+    /// escalate the bonus by <see cref="nearMissChainStep"/> per chain link; a gap longer
+    /// than the window resets the chain to 1.
+    /// </summary>
+    public void RegisterNearMiss(float atTime)
     {
-        NearMissScore += nearMissBonus;
+        NearMissChain = (atTime - lastNearMissTime) <= nearMissChainWindow ? NearMissChain + 1 : 1;
+        lastNearMissTime = atTime;
+
+        NearMissScore += nearMissBonus + (NearMissChain - 1) * nearMissChainStep;
         OnScoreChanged();
     }
 
@@ -97,6 +128,8 @@ public class ScoreSystem
         comboDistance = 0f;
         ComboCount = 0;
         DriftMultiplier = 1f;
+        NearMissChain = 0;
+        lastNearMissTime = float.NegativeInfinity;
         OnScoreChanged();
     }
 
