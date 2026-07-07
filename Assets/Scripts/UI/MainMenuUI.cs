@@ -19,13 +19,14 @@ namespace DriftTherapy
         public Image vehicleSwatch;
 
         [Header("Buttons")]
-        public Button runButton, garageButton, homeButton, missionsButton, trialsButton, shopButton;
+        public Button runButton, garageButton, homeButton, missionsButton, trialsButton, shopButton, leaderboardButton;
 
         [Header("Popups")]
         public PopupHandler popups;
-        public GameObject missionsPopup, vehiclesPopup, shopPopup, trialsPopup;
+        public GameObject missionsPopup, vehiclesPopup, shopPopup, trialsPopup, leaderboardPopup;
 
         GameApp app;
+        int lastCoins = -1, lastGems = -1;
 
         void Start()
         {
@@ -36,6 +37,7 @@ namespace DriftTherapy
             Bind(missionsButton, () => { if (popups) popups.Open(missionsPopup); });
             Bind(trialsButton, () => { if (popups) popups.Open(trialsPopup); });
             Bind(shopButton, () => { if (popups) popups.Open(shopPopup); });
+            Bind(leaderboardButton, () => { if (popups) popups.Open(leaderboardPopup); });
             Bind(homeButton, () => { if (popups) popups.Close(); });
 
             if (app != null) app.Changed += Refresh;
@@ -55,10 +57,12 @@ namespace DriftTherapy
         {
             if (app == null) return;
             var d = app.Data;
-            Set(coinsText, d.coins); Set(gemsText, d.gems); Set(keysText, d.keys);
+            SetOrCount(coinsText, ref lastCoins, d.coins);
+            SetOrCount(gemsText, ref lastGems, d.gems);
+            Set(keysText, d.keys);
             Set(levelText, d.level);
             if (xpText) xpText.text = $"{d.xp}/{app.XpToLevel}";
-            if (xpFill) { var an = xpFill.anchorMax; an.x = app.XpToLevel > 0 ? Mathf.Clamp01((float)d.xp / app.XpToLevel) : 0f; xpFill.anchorMax = an; }
+            if (xpFill) UiJuice.FillTo(xpFill, app.XpToLevel > 0 ? (float)d.xp / app.XpToLevel : 0f, 0.25f);
             if (bestText) bestText.text = $"BEST {Mathf.FloorToInt(d.bestDistanceMeters)} m";
             var sel = app.Selected;
             if (sel != null)
@@ -69,5 +73,14 @@ namespace DriftTherapy
         }
 
         static void Set(TMP_Text t, int v) { if (t) t.text = v.ToString(); }
+
+        /// <summary>Snaps on first refresh / on decrease (e.g. a spend); counts up on increase (e.g. a claim reward).</summary>
+        static void SetOrCount(TMP_Text t, ref int last, int value)
+        {
+            if (t == null) { last = value; return; }
+            if (last < 0 || value <= last) t.text = value.ToString();
+            else UiJuice.CountTo(t, last, value, 0.4f);
+            last = value;
+        }
     }
 }

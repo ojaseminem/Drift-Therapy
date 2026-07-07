@@ -297,6 +297,11 @@ public class GameController : MonoBehaviour
 
     void HandleReviveRequested()
     {
+        // TODO(Ads): gate this behind PlatformServices.Ads.ShowRewarded(...) once a
+        // real ad network is wired (Phase 4). StubAdsService currently
+        // auto-grants so today's free-revive behavior is unchanged. Keep
+        // Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md in sync with this call site.
+
         // Revive() only succeeds from Failed with revives remaining.
         if (!runState.Revive())
         {
@@ -389,6 +394,11 @@ public class GameController : MonoBehaviour
         {
             GameApp.Instance.SubmitRun(finalDistance, coins, xp);
             bestDistanceMeters = GameApp.Instance.Data.bestDistanceMeters;
+
+            LeaderboardProvider.Current.Submit(finalDistance, GameApp.Instance.Data.selectedVehicleId);
+            // TODO(PlayGames): also submit to the online leaderboard once GPGS is
+            // installed (PlatformServices.PlayGames.SubmitScore). Keep
+            // Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md in sync with this call site.
         }
         else if (finalDistance > bestDistanceMeters)
         {

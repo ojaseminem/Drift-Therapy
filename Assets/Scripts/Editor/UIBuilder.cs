@@ -145,19 +145,22 @@ namespace DriftTherapy.EditorTools
             var nav = Img(canvas, "Nav", Dark);
             var nrt = (RectTransform)nav.transform; nrt.anchorMin = new Vector2(0, 0); nrt.anchorMax = new Vector2(1, 0); nrt.pivot = new Vector2(0.5f, 0);
             nrt.sizeDelta = new Vector2(0, 180);
-            ui.missionsButton = NavBtn(nav.transform, "Missions", 0);
-            ui.garageButton   = NavBtn(nav.transform, "Vehicles", 1);
-            ui.homeButton     = NavBtn(nav.transform, "Home", 2, true);
-            ui.trialsButton   = NavBtn(nav.transform, "Trials", 3);
-            ui.shopButton     = NavBtn(nav.transform, "Shop", 4);
+            const int navSlots = 6;
+            ui.missionsButton    = NavBtn(nav.transform, "Missions", 0, navSlots);
+            ui.garageButton      = NavBtn(nav.transform, "Vehicles", 1, navSlots);
+            ui.homeButton        = NavBtn(nav.transform, "Home", 2, navSlots, true);
+            ui.trialsButton      = NavBtn(nav.transform, "Trials", 3, navSlots);
+            ui.shopButton        = NavBtn(nav.transform, "Shop", 4, navSlots);
+            ui.leaderboardButton = NavBtn(nav.transform, "Ranks", 5, navSlots);
 
             // popups: one handler under the canvas; each screen is its own prefab
             var ph = RT(canvas, "PopupHandler"); Stretch(ph);
             ui.popups = ph.gameObject.AddComponent<PopupHandler>();
-            ui.vehiclesPopup = BuildGaragePopup();
-            ui.missionsPopup = BuildStubPopup("MISSIONS");
-            ui.trialsPopup   = BuildStubPopup("TRIALS");
-            ui.shopPopup     = BuildStubPopup("SHOP");
+            ui.vehiclesPopup    = BuildGaragePopup();
+            ui.missionsPopup    = BuildMissionsPopup();
+            ui.trialsPopup      = BuildTrialsPopup();
+            ui.shopPopup        = BuildStubPopup("SHOP");
+            ui.leaderboardPopup = BuildLeaderboardPopup();
 
             Save(root, Dir + "/MenuUI.prefab");
         }
@@ -167,7 +170,7 @@ namespace DriftTherapy.EditorTools
 
         static (RectTransform root, RectTransform card, Popup popup) PopupRoot(string name, float pad, float topPad)
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             var rt = (RectTransform)go.transform; rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one; rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
             go.GetComponent<Image>().color = new Color(0, 0, 0, 0.72f);
             var card = Img(go.transform, "Card", Panel); Stretch((RectTransform)card.transform, pad, pad, topPad, topPad);
@@ -197,6 +200,66 @@ namespace DriftTherapy.EditorTools
             return SavePopup(rt.gameObject, Dir + "/Popups/VehiclesPopup.prefab");
         }
 
+        static GameObject BuildMissionsPopup()
+        {
+            var (rt, card, _) = PopupRoot("MISSIONSPopup", 50, 240);
+            var mp = rt.gameObject.AddComponent<MissionsPopup>();
+            var t = Txt(card, "Title", "MISSIONS", 64, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(520, 90), new Vector2(0, -40));
+            mp.closeButton = Btn(card, "Close", "X", Accent2, Ink, 44); Box((RectTransform)mp.closeButton.transform, new Vector2(1, 1), new Vector2(90, 90), new Vector2(-24, -24));
+
+            // daily challenge card
+            var daily = Img(card, "DailyCard", Dark); Box((RectTransform)daily.transform, new Vector2(0.5f, 1), new Vector2(760, 220), new Vector2(0, -150));
+            mp.dailyTitleText = Txt(daily.transform, "Title", "Daily Challenge", 32, White, TextAlignmentOptions.Left);
+            Box(mp.dailyTitleText.rectTransform, new Vector2(0, 1), new Vector2(480, 50), new Vector2(30, -20));
+            mp.streakText = Txt(daily.transform, "Streak", "STREAK 0", 26, Coin, TextAlignmentOptions.Right);
+            Box(mp.streakText.rectTransform, new Vector2(1, 1), new Vector2(260, 50), new Vector2(-30, -20));
+            mp.dailyProgressFill = Bar(daily.transform, "ProgressBar", Panel, Accent);
+            Box((RectTransform)mp.dailyProgressFill.parent, new Vector2(0.5f, 0.5f), new Vector2(560, 30), new Vector2(-90, -10));
+            mp.dailyProgressText = Txt(daily.transform, "ProgressText", "0/0", 24, Dim, TextAlignmentOptions.Left);
+            Box(mp.dailyProgressText.rectTransform, new Vector2(0, 0.5f), new Vector2(260, 40), new Vector2(30, -10));
+            mp.dailyClaimButton = Btn(daily.transform, "Claim", "CLAIM", Coin, Ink, 28);
+            Box((RectTransform)mp.dailyClaimButton.transform, new Vector2(1, 0.5f), new Vector2(200, 80), new Vector2(-30, -10));
+
+            var content = RT(card, "Content"); Stretch(content, 30, 30, 400, 40);
+            var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>(); vlg.spacing = 14; vlg.childForceExpandHeight = false; vlg.childControlHeight = false; vlg.childControlWidth = true; vlg.childForceExpandWidth = true;
+            mp.content = content;
+            mp.rowTemplate = BuildMissionRow(content);
+            return SavePopup(rt.gameObject, Dir + "/Popups/MISSIONSPopup.prefab");
+        }
+
+        static GameObject BuildTrialsPopup()
+        {
+            var (rt, card, _) = PopupRoot("TRIALSPopup", 50, 240);
+            var tp = rt.gameObject.AddComponent<TrialsPopup>();
+            var t = Txt(card, "Title", "TRIALS", 64, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(500, 90), new Vector2(0, -40));
+            tp.closeButton = Btn(card, "Close", "X", Accent2, Ink, 44); Box((RectTransform)tp.closeButton.transform, new Vector2(1, 1), new Vector2(90, 90), new Vector2(-24, -24));
+
+            var content = RT(card, "Content"); Stretch(content, 30, 30, 150, 40);
+            var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>(); vlg.spacing = 14; vlg.childForceExpandHeight = false; vlg.childControlHeight = false; vlg.childControlWidth = true; vlg.childForceExpandWidth = true;
+            tp.content = content;
+            tp.rowTemplate = BuildMissionRow(content);
+            return SavePopup(rt.gameObject, Dir + "/Popups/TRIALSPopup.prefab");
+        }
+
+        static GameObject BuildLeaderboardPopup()
+        {
+            var (rt, card, _) = PopupRoot("LeaderboardPopup", 50, 240);
+            var lp = rt.gameObject.AddComponent<LeaderboardPopup>();
+            var t = Txt(card, "Title", "TOP RUNS", 64, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(560, 90), new Vector2(0, -40));
+            lp.closeButton = Btn(card, "Close", "X", Accent2, Ink, 44); Box((RectTransform)lp.closeButton.transform, new Vector2(1, 1), new Vector2(90, 90), new Vector2(-24, -24));
+
+            // Hidden by default; LeaderboardPopup enables it once PlatformServices.PlayGames.IsAvailable.
+            lp.viewGlobalButton = Btn(card, "ViewGlobal", "VIEW GLOBAL", Panel, White, 26);
+            Box((RectTransform)lp.viewGlobalButton.transform, new Vector2(0.5f, 1), new Vector2(420, 70), new Vector2(0, -140));
+            lp.viewGlobalButton.gameObject.SetActive(false);
+
+            var content = RT(card, "Content"); Stretch(content, 30, 30, 220, 40);
+            var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>(); vlg.spacing = 12; vlg.childForceExpandHeight = false; vlg.childControlHeight = false; vlg.childControlWidth = true; vlg.childForceExpandWidth = true;
+            lp.content = content;
+            lp.rowTemplate = BuildLeaderboardRow(content);
+            return SavePopup(rt.gameObject, Dir + "/Popups/LeaderboardPopup.prefab");
+        }
+
         static TMP_Text Chip(Transform p, string name, Color dot, Vector2 anchor, Vector2 off)
         {
             var chip = Img(p, name, Panel); Box((RectTransform)chip.transform, anchor, new Vector2(300, 80), off + new Vector2(anchor.x > 0 ? 0 : 0, 0));
@@ -205,10 +268,11 @@ namespace DriftTherapy.EditorTools
             return t;
         }
 
-        static Button NavBtn(Transform p, string label, int i, bool active = false)
+        static Button NavBtn(Transform p, string label, int i, int totalSlots, bool active = false)
         {
-            var b = Btn(p, label, label, active ? Accent : Panel, active ? Ink : White, 28);
-            var rt = (RectTransform)b.transform; rt.anchorMin = new Vector2(i / 5f, 0); rt.anchorMax = new Vector2((i + 1) / 5f, 1);
+            var b = Btn(p, label, label, active ? Accent : Panel, active ? Ink : White, 24);
+            var rt = (RectTransform)b.transform;
+            rt.anchorMin = new Vector2(i / (float)totalSlots, 0); rt.anchorMax = new Vector2((i + 1) / (float)totalSlots, 1);
             rt.pivot = new Vector2(0.5f, 0.5f); rt.offsetMin = new Vector2(8, 16); rt.offsetMax = new Vector2(-8, -16);
             return b;
         }
@@ -223,11 +287,48 @@ namespace DriftTherapy.EditorTools
             return row.gameObject;
         }
 
+        static GameObject BuildMissionRow(Transform content)
+        {
+            var row = Img(content, "RowTemplate", Dark);
+            row.gameObject.AddComponent<CanvasGroup>();
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 170; le.preferredHeight = 170;
+            var title = Txt(row.transform, "Title", "Mission", 32, White, TextAlignmentOptions.Left);
+            Box(title.rectTransform, new Vector2(0, 1), new Vector2(520, 50), new Vector2(24, -14));
+            var progressText = Txt(row.transform, "ProgressText", "0/0", 24, Dim, TextAlignmentOptions.Left);
+            Box(progressText.rectTransform, new Vector2(0, 0), new Vector2(300, 36), new Vector2(24, 14));
+            var bar = Bar(row.transform, "ProgressBar", Panel, Accent);
+            Box((RectTransform)bar.parent, new Vector2(0, 0), new Vector2(340, 22), new Vector2(24, 54));
+            var action = Btn(row.transform, "Action", "LOCKED", Coin, Ink, 26);
+            Box((RectTransform)action.transform, new Vector2(1, 0.5f), new Vector2(220, 90), new Vector2(-20, 0));
+            return row.gameObject;
+        }
+
+        static GameObject BuildLeaderboardRow(Transform content)
+        {
+            var row = Img(content, "RowTemplate", Dark);
+            row.gameObject.AddComponent<CanvasGroup>();
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 120; le.preferredHeight = 120;
+            var rank = Txt(row.transform, "Rank", "#1", 36, Coin, TextAlignmentOptions.Left);
+            Box(rank.rectTransform, new Vector2(0, 0.5f), new Vector2(110, 60), new Vector2(20, 0));
+            var swatch = Img(row.transform, "Swatch", Accent);
+            Box((RectTransform)swatch.transform, new Vector2(0, 0.5f), new Vector2(70, 70), new Vector2(140, 0));
+            var distance = Txt(row.transform, "Distance", "0 m", 34, White, TextAlignmentOptions.Left);
+            Box(distance.rectTransform, new Vector2(0, 0.5f), new Vector2(280, 60), new Vector2(230, 0));
+            var date = Txt(row.transform, "Date", "", 22, Dim, TextAlignmentOptions.Right);
+            Box(date.rectTransform, new Vector2(1, 0.5f), new Vector2(220, 50), new Vector2(-20, 0));
+            return row.gameObject;
+        }
+
         // ── Game HUD ─────────────────────────────────────────────────────────
         static void BuildGame()
         {
             var (root, canvas) = NewScreen("GameUI");
             var ui = root.AddComponent<GameHudUI>();
+            ui.coinFly = canvas.gameObject.AddComponent<CoinFlyEffect>();
+            // NOTE: ui.player is a scene reference (the PlayerCar object in
+            // DriftEndless.unity) and cannot be wired from this prefab-only
+            // builder — assign it manually in the Inspector once, same as
+            // GameController.player.
 
             ui.distanceText = Txt(canvas, "Distance", "0 m", 40, White, TextAlignmentOptions.TopLeft); Box(ui.distanceText.rectTransform, new Vector2(0, 1), new Vector2(420, 60), new Vector2(40, -50)); ui.distanceText.gameObject.SetActive(false);
             ui.scoreText = Txt(canvas, "Score", "0", 96, White, TextAlignmentOptions.Top); Box(ui.scoreText.rectTransform, new Vector2(0.5f, 1), new Vector2(700, 130), new Vector2(0, -40)); ui.scoreText.gameObject.SetActive(false);
@@ -263,6 +364,7 @@ namespace DriftTherapy.EditorTools
             CardTitle(ecard, "RUN OVER");
 
             var banner = Img(ecard, "ResultBanner", Dark);
+            ui.resultBannerGroup = banner.gameObject.AddComponent<CanvasGroup>();
             Box((RectTransform)banner.transform, new Vector2(0.5f, 1), new Vector2(720, 112), new Vector2(0, -126));
             var bannerText = Txt(banner.transform, "Label", "DRIFT COMPLETE", 42, Accent);
             Stretch(bannerText.rectTransform);
@@ -281,6 +383,7 @@ namespace DriftTherapy.EditorTools
             Stretch(carName.rectTransform);
 
             var distanceCard = Img(ecard, "DistanceCard", new Color(0.11f, 0.13f, 0.18f, 1f));
+            ui.distanceCardGroup = distanceCard.gameObject.AddComponent<CanvasGroup>();
             Box((RectTransform)distanceCard.transform, new Vector2(0.5f, 0.5f), new Vector2(760, 240), new Vector2(0, 150));
             var distanceLabel = Txt(distanceCard.transform, "Label", "DISTANCE", 34, Dim);
             Box(distanceLabel.rectTransform, new Vector2(0.5f, 1), new Vector2(500, 52), new Vector2(0, -24));
@@ -292,6 +395,7 @@ namespace DriftTherapy.EditorTools
             Box(ui.endNewBest.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(440, 58), new Vector2(0, -4));
 
             var rewards = Img(ecard, "Rewards", new Color(0, 0, 0, 0));
+            ui.rewardsGroup = rewards.gameObject.AddComponent<CanvasGroup>();
             Box((RectTransform)rewards.transform, new Vector2(0.5f, 0.5f), new Vector2(760, 130), new Vector2(0, -84));
             var coinsChip = Img(rewards.transform, "CoinsReward", Dark);
             Box((RectTransform)coinsChip.transform, new Vector2(0, 0.5f), new Vector2(360, 110), new Vector2(0, 0));
@@ -312,8 +416,10 @@ namespace DriftTherapy.EditorTools
             Box(ui.endXp.rectTransform, new Vector2(0, 0.5f), new Vector2(210, 54), new Vector2(108, -16));
 
             ui.retryButton = Btn(ecard, "Retry", "RETRY", Coin, Ink, 56);
+            ui.retryGroup = ui.retryButton.gameObject.AddComponent<CanvasGroup>();
             Box((RectTransform)ui.retryButton.transform, new Vector2(0.5f, 0), new Vector2(620, 150), new Vector2(0, 178));
             ui.endHomeButton = Btn(ecard, "EndHome", "HOME", Panel, White, 42);
+            ui.endHomeGroup = ui.endHomeButton.gameObject.AddComponent<CanvasGroup>();
             Box((RectTransform)ui.endHomeButton.transform, new Vector2(0.5f, 0), new Vector2(480, 104), new Vector2(0, 54));
 
             Save(root, Dir + "/GameUI.prefab");

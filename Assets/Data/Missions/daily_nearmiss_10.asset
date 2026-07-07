@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf19621333ea204468da4e31a0eb8372, type: 3}
+  m_Name: daily_nearmiss_10
+  m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.MissionDef
+  id: daily_nearmiss_10
+  title: Close Calls
+  description: Register 10 near misses today.
+  scope: 1
+  metric: 1
+  targetValue: 10
+  rewardCoins: 150
+  rewardGems: 0
+  rewardXp: 0
+  achievementId: 
