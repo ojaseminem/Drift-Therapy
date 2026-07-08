@@ -136,7 +136,10 @@ namespace DriftTherapy.EditorTools
             var ui = root.AddComponent<MainMenuUI>();
             // Full-bleed screen background — parents under the raw canvas (not the
             // safe-area child) so it covers every corner regardless of notch insets.
+            // Must render behind SafeArea (which NewScreen() already parented as the
+            // first child of rawCanvas) or it draws on top and hides all content.
             var bg = Img(rawCanvas, "Bg", Bg); Stretch((RectTransform)bg.transform);
+            bg.transform.SetAsFirstSibling();
 
             // top bar
             var bar = Img(canvas, "TopBar", Dark);
