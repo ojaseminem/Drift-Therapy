@@ -32,6 +32,9 @@ public class RoadSegmentPool : MonoBehaviour
     [SerializeField] Transform  player;
     [SerializeField] Material[] roadMaterials; // [0] asphalt, [1] kerb
 
+    /// <summary>Called by PlayerVehicleSpawner right after spawning the selected vehicle (runs in Awake, before this component's Start()).</summary>
+    public void SetPlayer(Transform player) => this.player = player;
+
     [Header("Pool")]
     [SerializeField] int   poolSize            = 12;
     [SerializeField] float segmentArcLength    = 40f;   // metres per mesh chunk

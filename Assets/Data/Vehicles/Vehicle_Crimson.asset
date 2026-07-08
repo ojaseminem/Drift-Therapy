@@ -15,5 +15,10 @@ MonoBehaviour:
   id: crimson
   displayName: Crimson
   price: 500
+  gemPrice: 0
   ownedByDefault: 0
   bodyColor: {r: 0.85, g: 0.2, b: 0.25, a: 1}
+  prefab: {fileID: 8580786351462446872, guid: 2a037190cd9b7244bb219bf1c9d52004, type: 3}
+  specSpeed: 70
+  specHandling: 45
+  specBoost: 55

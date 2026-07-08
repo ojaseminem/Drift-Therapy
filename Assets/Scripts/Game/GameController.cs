@@ -77,6 +77,18 @@ public class GameController : MonoBehaviour
         if (!vehicle && player != null) vehicle = player.GetComponent<VehicleHealth>();
     }
 
+    /// <summary>
+    /// Called by <see cref="PlayerVehicleSpawner"/> (DefaultExecutionOrder -100, so
+    /// this always runs before this component's own Awake()) right after spawning
+    /// the selected vehicle. Replaces the old static-scene-object wiring.
+    /// </summary>
+    public void SetPlayer(Transform player, VehicleHealth vehicle, HyperDriftCarController car)
+    {
+        this.player = player;
+        this.vehicle = vehicle;
+        if (car != null) this.car = car;
+    }
+
     void OnEnable()
     {
         // UI intents → controller.

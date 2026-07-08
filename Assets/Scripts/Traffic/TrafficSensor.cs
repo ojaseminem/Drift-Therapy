@@ -41,6 +41,13 @@ public class TrafficSensor : MonoBehaviour
     public bool InGrace => Time.time < graceUntil;
     public void StartGrace() => graceUntil = Time.time + Mathf.Max(0f, graceSeconds);
 
+    /// <summary>Called by PlayerVehicleSpawner right after spawning the selected vehicle.</summary>
+    public void SetPlayer(Transform player, HyperDriftCarController car)
+    {
+        this.player = player;
+        this.car = car;
+    }
+
     void Update()
     {
         if (!player || traffic == null) return;

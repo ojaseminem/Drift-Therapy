@@ -15,5 +15,10 @@ MonoBehaviour:
   id: emerald
   displayName: Emerald
   price: 1200
+  gemPrice: 0
   ownedByDefault: 0
   bodyColor: {r: 0.2, g: 0.8, b: 0.45, a: 1}
+  prefab: {fileID: 1566860290911273097, guid: f1a87a8e2af46ef4283345b4984dd4d9, type: 3}
+  specSpeed: 45
+  specHandling: 75
+  specBoost: 50

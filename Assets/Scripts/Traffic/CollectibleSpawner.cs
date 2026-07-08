@@ -13,6 +13,13 @@ public class CollectibleSpawner : MonoBehaviour
     [SerializeField] VehicleHealth vehicle;
     [SerializeField] Collectible prefab;
 
+    /// <summary>Called by PlayerVehicleSpawner right after spawning the selected vehicle.</summary>
+    public void SetPlayer(Transform player, VehicleHealth vehicle)
+    {
+        this.player = player;
+        this.vehicle = vehicle;
+    }
+
     [Header("Repair")]
     [SerializeField] float repairAmount = 35f;
 

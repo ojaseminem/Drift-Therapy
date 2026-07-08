@@ -38,6 +38,9 @@ namespace DriftTherapy
 
         void Awake() => controller = FindFirstObjectByType<GameController>();
 
+        /// <summary>Called by PlayerVehicleSpawner right after spawning the selected vehicle.</summary>
+        public void SetPlayer(Transform player) => this.player = player;
+
         void OnEnable()
         {
             Bind(pauseButton, () => GameSignals.RaisePauseToggled());

@@ -15,5 +15,10 @@ MonoBehaviour:
   id: violet
   displayName: Violet
   price: 2500
+  gemPrice: 0
   ownedByDefault: 0
   bodyColor: {r: 0.6, g: 0.3, b: 0.9, a: 1}
+  prefab: {fileID: 8557317350992945109, guid: 7c79a09e089d8464c86830104b21d967, type: 3}
+  specSpeed: 60
+  specHandling: 55
+  specBoost: 75

@@ -15,5 +15,10 @@ MonoBehaviour:
   id: drifter
   displayName: Drifter
   price: 0
+  gemPrice: 0
   ownedByDefault: 1
   bodyColor: {r: 0.16, g: 0.7, b: 0.9, a: 1}
+  prefab: {fileID: 6263950151519020536, guid: 2f1a654347479d24eb44bcca3bc18d78, type: 3}
+  specSpeed: 50
+  specHandling: 50
+  specBoost: 50

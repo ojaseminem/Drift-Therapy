@@ -30,6 +30,9 @@ public class TrafficDirector : MonoBehaviour
     [SerializeField] Transform container;                 // parent for pooled instances
     [SerializeField] TrafficVehicleType[] vehicleTypes;
 
+    /// <summary>Called by PlayerVehicleSpawner right after spawning the selected vehicle.</summary>
+    public void SetPlayer(Transform player) => this.player = player;
+
     [Header("Lanes")]
     [SerializeField] float laneWidth = 3.5f;
     [SerializeField] float edgePadding = 0.6f;
