@@ -31,6 +31,17 @@
 - Android `applicationId`: `com.turtlegameworks.drifttherapy`
   (`Assets/Scripts/Editor/AndroidReleaseBuilder.cs`). App Bundle + upload
   keystore already configured — Play Console-ready.
+- **IAP is real, not a stub**: `Assets/Scripts/Services/IAPService.cs` uses
+  Unity IAP's classic `IStoreListener` API (com.unity.purchasing 5.2.1 is
+  installed and configured for Google Play —
+  `Assets/Resources/BillingMode.json`) for a single non-consumable
+  `remove_ads` product. Verified in Editor Fake Store: initializes, dispatches
+  purchases, no errors. The classic API is deprecated in favor of IAP v5 but
+  still fully supported — flagged as a future migration, not urgent.
+- **Consent is a stub** (`Assets/Scripts/Services/IConsentService.cs`,
+  `PlatformServices.Consent`) — defaults to "unresolved/non-personalized" so
+  nothing silently claims consent that was never granted. Needs a real CMP
+  (e.g. Google UMP) once an ads network is picked.
 
 ## 2. Call-site table
 
@@ -43,6 +54,8 @@
 | 5 | `GameController.cs : HandleReviveRequested()` | Free revive, unchanged (no ad shown) | Gate behind `PlatformServices.Ads.ShowRewarded(onRewarded: () => runState.Revive()-path, onFailed: ...)` | Pending (Phase 4) |
 | 6 | `GameHudUI.cs` end-panel home/restart handlers | No ad shown | Frequency-capped `PlatformServices.Ads.ShowInterstitial(...)` before `SceneFlow.GoToMenu()`/restart | Pending (Phase 4) |
 | 7 | `PlatformServices.cs : Init()` | Calls `Ads.Init()` (stub, logs only) | Real mediation SDK init (App ID from step 4 below) | Pending |
+| 8 | `PlatformServices.cs : Init()` | Calls `Consent.RequestConsent(null)` (stub, always resolves immediately as non-personalized) | Real CMP (e.g. Google UMP) — gate `Ads.Init()` on `IsConsentResolved` | Pending |
+| 9 | `IAPService.cs` | Fully functional (classic Unity IAP API) | Optional: migrate to IAP v5 APIs when convenient (deprecation warning only, not urgent) | Working, not blocked |
 
 ## 3. What to paste in later
 

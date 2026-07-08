@@ -134,6 +134,8 @@ namespace DriftTherapy.EditorTools
             ui.keysText  = Chip(bar.transform, "Keys", Key, new Vector2(0, 0.5f), new Vector2(40, 0));
             ui.gemsText  = Chip(bar.transform, "Gems", Gem, new Vector2(0.34f, 0.5f), Vector2.zero);
             ui.coinsText = Chip(bar.transform, "Coins", Coin, new Vector2(0.66f, 0.5f), Vector2.zero);
+            ui.settingsButton = Btn(bar.transform, "Settings", "SET", Panel, White, 24);
+            Box((RectTransform)ui.settingsButton.transform, new Vector2(1, 0.5f), new Vector2(90, 90), new Vector2(-40, 0));
 
             // profile
             var card = Img(canvas, "Profile", Panel);
@@ -172,6 +174,8 @@ namespace DriftTherapy.EditorTools
             ui.trialsPopup      = BuildTrialsPopup();
             ui.shopPopup        = BuildStubPopup("SHOP");
             ui.leaderboardPopup = BuildLeaderboardPopup();
+            ui.settingsPopup    = BuildSettingsPopup();
+            ui.onboardingPopup  = BuildOnboardingPopup();
 
             Save(root, Dir + "/MenuUI.prefab");
         }
@@ -196,6 +200,47 @@ namespace DriftTherapy.EditorTools
             var body = Txt(card, "Body", "Coming soon", 42, Dim, TextAlignmentOptions.Center); Stretch(body.rectTransform, 40, 40, 170, 200);
             p.closeButton = Btn(card, "Close", "CLOSE", Accent, Ink, 44); Box((RectTransform)p.closeButton.transform, new Vector2(0.5f, 0), new Vector2(420, 120), new Vector2(0, 60));
             return SavePopup(rt.gameObject, Dir + "/Popups/" + title + "Popup.prefab");
+        }
+
+        static GameObject BuildSettingsPopup()
+        {
+            var (rt, card, _) = PopupRoot("SettingsPopup", 70, 300);
+            var sp = rt.gameObject.AddComponent<SettingsPopup>();
+            var t = Txt(card, "Title", "SETTINGS", 62, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(600, 90), new Vector2(0, -40));
+            sp.closeButton = Btn(card, "Close", "X", Accent2, Ink, 44); Box((RectTransform)sp.closeButton.transform, new Vector2(1, 1), new Vector2(90, 90), new Vector2(-24, -24));
+
+            sp.musicButton    = StackBtn(card, "Music", "MUSIC: ON", Panel, White, 0);
+            sp.sfxButton      = StackBtn(card, "Sfx", "SFX: ON", Panel, White, 1);
+            sp.hapticsButton  = StackBtn(card, "Haptics", "HAPTICS: ON", Panel, White, 2);
+            sp.removeAdsButton = StackBtn(card, "RemoveAds", "REMOVE ADS", Coin, Ink, 3);
+            sp.restoreButton  = StackBtn(card, "Restore", "RESTORE PURCHASES", Panel, White, 4);
+
+            sp.versionText = Txt(card, "Version", "v1.0", 24, Dim);
+            Box(sp.versionText.rectTransform, new Vector2(0.5f, 0), new Vector2(400, 40), new Vector2(0, 40));
+
+            return SavePopup(rt.gameObject, Dir + "/Popups/SettingsPopup.prefab");
+        }
+
+        static GameObject BuildOnboardingPopup()
+        {
+            var (rt, card, _) = PopupRoot("OnboardingPopup", 70, 420);
+            var op = rt.gameObject.AddComponent<OnboardingPopup>();
+            var t = Txt(card, "Title", "HOW TO PLAY", 58, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(640, 90), new Vector2(0, -40));
+
+            var steerRow = Img(card, "SteerRow", Dark); Box((RectTransform)steerRow.transform, new Vector2(0.5f, 1), new Vector2(700, 130), new Vector2(0, -160));
+            var steerDot = Img(steerRow.transform, "Dot", Accent); Box((RectTransform)steerDot.transform, new Vector2(0, 0.5f), new Vector2(64, 64), new Vector2(36, 0));
+            var steerLabel = Txt(steerRow.transform, "Label", "SWIPE TO STEER", 32, White, TextAlignmentOptions.Left);
+            Box(steerLabel.rectTransform, new Vector2(0, 0.5f), new Vector2(520, 70), new Vector2(96, 0));
+
+            var driftRow = Img(card, "DriftRow", Dark); Box((RectTransform)driftRow.transform, new Vector2(0.5f, 1), new Vector2(700, 130), new Vector2(0, -300));
+            var driftDot = Img(driftRow.transform, "Dot", Accent2); Box((RectTransform)driftDot.transform, new Vector2(0, 0.5f), new Vector2(64, 64), new Vector2(36, 0));
+            var driftLabel = Txt(driftRow.transform, "Label", "HOLD TO DRIFT", 32, White, TextAlignmentOptions.Left);
+            Box(driftLabel.rectTransform, new Vector2(0, 0.5f), new Vector2(520, 70), new Vector2(96, 0));
+
+            op.gotItButton = Btn(card, "GotIt", "GOT IT", Coin, Ink, 48);
+            Box((RectTransform)op.gotItButton.transform, new Vector2(0.5f, 0), new Vector2(480, 120), new Vector2(0, 60));
+
+            return SavePopup(rt.gameObject, Dir + "/Popups/OnboardingPopup.prefab");
         }
 
         static GameObject BuildGaragePopup()

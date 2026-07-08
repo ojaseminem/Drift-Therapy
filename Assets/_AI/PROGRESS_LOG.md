@@ -1,5 +1,47 @@
 # Progress Log
 
+## 2026-07-08 (part 2) — Settings, onboarding, real IAP, smoke FX, consent seam
+
+Continuation of the same day's roadmap work — the "good next coding sessions"
+list from `NEXT_STEPS.md`. Verified via Unity MCP throughout (compile checks
+after every edit via `refresh_unity`, EditMode tests, play-mode screenshots,
+`execute_code` interaction tests).
+
+- **Settings popup**: music/SFX/haptics as ON/OFF toggle buttons (not
+  continuous sliders — deliberately avoided building an untested custom
+  Slider control for one popup; matches the existing button-driven UI
+  pattern everywhere else), remove-ads purchase/restore, version line.
+- **Onboarding popup**: two-line "SWIPE TO STEER" / "HOLD TO DRIFT", shown
+  once on first launch (`GameApp.Data.onboardingSeen`), auto-opened by
+  `MainMenuUI`. Verified visually — clean, no wall of text.
+- **Real IAP** (`IAPService.cs`): Unity IAP's classic `IStoreListener` API
+  (com.unity.purchasing 5.2.1, already configured for Google Play) for a
+  single non-consumable `remove_ads` product, defined in code — no separate
+  Catalog asset. Verified in Editor Fake Store: initializes, dispatches
+  purchases, zero errors. The classic API logs a deprecation warning (IAP v5
+  exists) but is still fully supported — not urgent to migrate.
+  A real compile error here (`IAppleExtensions.RestoreTransactions`'s actual
+  callback signature is `Action<bool,string>`, not `Action<string>` as first
+  guessed) was caught immediately by `refresh_unity` + console check, not
+  assumed correct from memory.
+- **Combo-tier smoke tint** (`ComboSmokeFx.cs`): the one deliberately-skipped
+  item from the morning session. Found a genuinely non-invasive hook —
+  `FXController.Instance.GetAspahaltParticles` is already public — so this
+  tints/scales the shared smoke ParticleSystem by combo tier without editing
+  any vendored ACC_Lite file. Verified live: confirmed `FXController.Instance`
+  exists in the scene, the signal subscription fires, and — instructively —
+  watched a simulated test signal get correctly overwritten by the real
+  gameplay loop's actual combo state within a frame, which is proof the
+  component tracks live signals rather than going stale.
+- **Consent seam** (`IConsentService.cs`, `PlatformServices.Consent`): stub
+  defaults to unresolved/non-personalized (never silently claims consent
+  that wasn't granted). `PLAY_GAMES_ADS_INTEGRATION.md` updated with the new
+  rows.
+
+All 25 EditMode tests still pass. Both scenes re-saved with the new
+components wired in (`ComboSmokeFx` alongside `GameController` in
+`DriftEndless.unity`).
+
 ## 2026-07-08 — Meta progression, leaderboard, DOTween juice, Phase 1/2 roadmap items
 
 Executed `LEVEL_UP_GDD.md`'s roadmap: meta progression + leaderboard + Play

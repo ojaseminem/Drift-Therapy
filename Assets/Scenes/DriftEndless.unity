@@ -644,6 +644,7 @@ GameObject:
   - component: {fileID: 461418342}
   - component: {fileID: 461418341}
   - component: {fileID: 461418344}
+  - component: {fileID: 461418345}
   m_Layer: 0
   m_Name: GameController
   m_TagString: Untagged
@@ -749,6 +750,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f91c03d2584c5304a8d06f24d7369aa4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.MissionTracker
+--- !u!114 &461418345
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 461418340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d7126e5a3b877a43a90e6ce59e38de5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComboSmokeFx
+  baseColor: {r: 0.75, g: 0.75, b: 0.75, a: 0.55}
+  legendTintColor: {r: 1, g: 0.55, b: 0.15, a: 0.7}
+  maxSizeMultiplier: 1.35
+  lerpSpeed: 3
 --- !u!1 &566026122
 GameObject:
   m_ObjectHideFlags: 0
@@ -1489,6 +1506,10 @@ MonoBehaviour:
   velocityLookAhead: 0.09
   positionSmoothTime: 0.18
   rotationLerpSpeed: 8
+  cam: {fileID: 0}
+  maxFovBoost: 6
+  maxTiltDegrees: 4
+  comboFeelLerpSpeed: 4
 --- !u!134 &2005611028
 PhysicsMaterial:
   m_ObjectHideFlags: 0

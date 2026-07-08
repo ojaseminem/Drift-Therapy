@@ -19,11 +19,11 @@ namespace DriftTherapy
         public Image vehicleSwatch;
 
         [Header("Buttons")]
-        public Button runButton, garageButton, homeButton, missionsButton, trialsButton, shopButton, leaderboardButton;
+        public Button runButton, garageButton, homeButton, missionsButton, trialsButton, shopButton, leaderboardButton, settingsButton;
 
         [Header("Popups")]
         public PopupHandler popups;
-        public GameObject missionsPopup, vehiclesPopup, shopPopup, trialsPopup, leaderboardPopup;
+        public GameObject missionsPopup, vehiclesPopup, shopPopup, trialsPopup, leaderboardPopup, settingsPopup, onboardingPopup;
 
         GameApp app;
         int lastCoins = -1, lastGems = -1;
@@ -38,10 +38,17 @@ namespace DriftTherapy
             Bind(trialsButton, () => { if (popups) popups.Open(trialsPopup); });
             Bind(shopButton, () => { if (popups) popups.Open(shopPopup); });
             Bind(leaderboardButton, () => { if (popups) popups.Open(leaderboardPopup); });
+            Bind(settingsButton, () => { if (popups) popups.Open(settingsPopup); });
             Bind(homeButton, () => { if (popups) popups.Close(); });
 
             if (app != null) app.Changed += Refresh;
             Refresh();
+
+            // First-run "how to play" — shown once, gated by onboardingSeen.
+            if (app != null && !app.Data.onboardingSeen && popups != null && onboardingPopup != null)
+            {
+                popups.Open(onboardingPopup);
+            }
         }
 
         void OnDestroy() { if (app != null) app.Changed -= Refresh; }

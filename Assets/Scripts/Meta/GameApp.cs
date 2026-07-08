@@ -51,6 +51,8 @@ namespace DriftTherapy
         public float sfxVolume = 1f;
         public bool haptics = true;
         public bool welcomed;
+        public bool removeAdsOwned;
+        public bool onboardingSeen;
 
         // ── Missions / trials / daily streak ────────────────────────────────
         public List<MissionState> missionStates = new List<MissionState>();
@@ -239,6 +241,29 @@ namespace DriftTherapy
             Data.coins -= amount;
             Changed?.Invoke();
             return true;
+        }
+
+        // ── Settings ─────────────────────────────────────────────────────────
+        public void SetMusicVolume(float v) { Data.musicVolume = Mathf.Clamp01(v); Save(); Changed?.Invoke(); }
+        public void SetSfxVolume(float v) { Data.sfxVolume = Mathf.Clamp01(v); Save(); Changed?.Invoke(); }
+        public void SetHaptics(bool on) { Data.haptics = on; Save(); Changed?.Invoke(); }
+
+        /// <summary>Called once, the first time the onboarding popup is dismissed.</summary>
+        public void MarkOnboardingSeen()
+        {
+            if (Data.onboardingSeen) return;
+            Data.onboardingSeen = true;
+            Save();
+            Changed?.Invoke();
+        }
+
+        /// <summary>Grants the remove-ads entitlement (called by IAPService on purchase/restore).</summary>
+        public void SetRemoveAdsOwned(bool owned)
+        {
+            if (Data.removeAdsOwned == owned) return;
+            Data.removeAdsOwned = owned;
+            Save();
+            Changed?.Invoke();
         }
 
         // ── Progression ──────────────────────────────────────────────────────
