@@ -1,5 +1,66 @@
 # Progress Log
 
+## 2026-07-08 (part 3) — Garage overhaul: modular vehicles, 3D scene, carousel
+
+Full 6-stage rework of vehicle selection, per the approved plan. Verified via
+Unity MCP throughout — every stage compile-checked, tested in a real
+MainMenu -> Garage -> RUN Play Mode flow, not just read-and-hope.
+
+- **Stage 1 — modular vehicles**: `VehicleDef` gained `prefab`/`gemPrice`/
+  display-only spec fields. `Assets/Prefabs/Vehicles/Vehicle_*.prefab`
+  exported from the live, fully-tuned scene PlayerCar (preserves tuned
+  physics that differ from class defaults). `PlayerVehicleSpawner`
+  (`[DefaultExecutionOrder(-100)]`) replaces the static scene PlayerCar,
+  spawning `GameApp.Selected.prefab` and wiring it into every consumer via
+  new `SetPlayer` setters. Three consumers — `RoadSegmentPool`,
+  `TrafficDirector`, `CollectibleSpawner` — were missed by the original
+  research pass and only found by actually deleting the static object and
+  reading the console (`RoadSegmentPool` failed loudly; the other two would
+  have failed silently, no traffic/collectibles ever spawning again).
+- **Stage 2 — `Garage.unity`**: new scene, primitive floor/pillar decor (no
+  new art assets), `GarageVehicleDisplay` pools vehicle instances by id and
+  disables their gameplay components for display purposes.
+- **Stage 3 — carousel**: `SnapCarousel` (paged ScrollRect) drives
+  `GarageVehicleDisplay.Show()` as you swipe. Two real bugs found only by
+  running it: script-driven `LayoutElement.preferredWidth` didn't reliably
+  propagate through Unity's layout-pass timing (switched to direct
+  `RectTransform` sizing), and `content`'s own rect was never resized to
+  span all cards, so `ScrollRect` concluded there was nothing to scroll and
+  silently snapped position back to (0,0) every frame regardless of what
+  `SnapTo` set.
+- **Stage 4 — purchase confirmation**: `PurchaseConfirmPopup` +
+  `GameApp.TryBuy(VehicleDef, useGems)` overload + `TrySpendGems`. Buy
+  button now confirms before spending. Tested both the rejected
+  (insufficient funds, no charge) and accepted paths.
+- **Stage 5 — safe-area fix**: `UIBuilder.NewScreen()` now returns
+  `(root, safeArea, rawCanvas)` — full-bleed backgrounds/scrims parent under
+  the raw canvas, actual content stays under the safe-area child. Also
+  found and fixed a **second**, more fundamental bug while verifying this:
+  in the Device Simulator, `Screen.safeArea` is reported in native device
+  pixels while `Screen.width`/`height` report the simulator's scaled
+  preview resolution — producing anchors like 2.9 instead of ~1.0 and a
+  badly oversized layout. `SafeAreaFitter` now clamps anchors to 0..1 (a
+  safe-area anchor can never legitimately exceed that range) — a no-op on
+  real devices, a safe fallback here.
+- **Stage 6 — retirement**: `GaragePopup.cs`/`VehiclesPopup.prefab` deleted;
+  the Garage nav button now calls `SceneFlow.GoToGarage()` (a real scene
+  transition, like RUN) instead of opening a popup.
+
+**Full regression verified**: MainMenu -> tap Garage nav button (not just a
+direct method call) -> swipe/select/buy/equip a vehicle (confirmed via
+direct data inspection, not just screenshots — one screenshot read was
+initially misjudged and corrected by checking the raw TMP `<s>` tag) ->
+Home -> RUN -> `PlayerVehicleSpawner` spawns the newly-equipped vehicle in
+`DriftEndless`, confirmed by both data query and screenshot. 25/25 EditMode
+tests pass throughout.
+
+One environment note for future sessions: mid-session the Unity Editor's
+own Play Mode pause state got toggled on somehow (not by any code here),
+which froze `Time.frameCount`/DOTween entirely — looked exactly like a
+stuck coroutine/tween bug until `EditorApplication.isPaused` was checked
+directly. `manage_editor(action:'pause')` toggles pause, so calling it once
+resumed and unstuck everything.
+
 ## 2026-07-08 (part 2) — Settings, onboarding, real IAP, smoke FX, consent seam
 
 Continuation of the same day's roadmap work — the "good next coding sessions"

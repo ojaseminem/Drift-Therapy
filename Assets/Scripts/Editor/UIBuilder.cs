@@ -171,7 +171,7 @@ namespace DriftTherapy.EditorTools
             nrt.sizeDelta = new Vector2(0, 180);
             const int navSlots = 6;
             ui.missionsButton    = NavBtn(nav.transform, "Missions", 0, navSlots);
-            ui.garageButton      = NavBtn(nav.transform, "Vehicles", 1, navSlots);
+            ui.garageButton      = NavBtn(nav.transform, "Garage", 1, navSlots);
             ui.homeButton        = NavBtn(nav.transform, "Home", 2, navSlots, true);
             ui.trialsButton      = NavBtn(nav.transform, "Trials", 3, navSlots);
             ui.shopButton        = NavBtn(nav.transform, "Shop", 4, navSlots);
@@ -182,7 +182,6 @@ namespace DriftTherapy.EditorTools
             // NewScreen()'s doc comment.
             var ph = RT(rawCanvas, "PopupHandler"); Stretch(ph);
             ui.popups = ph.gameObject.AddComponent<PopupHandler>();
-            ui.vehiclesPopup    = BuildGaragePopup();
             ui.missionsPopup    = BuildMissionsPopup();
             ui.trialsPopup      = BuildTrialsPopup();
             ui.shopPopup        = BuildStubPopup("SHOP");
@@ -254,19 +253,6 @@ namespace DriftTherapy.EditorTools
             Box((RectTransform)op.gotItButton.transform, new Vector2(0.5f, 0), new Vector2(480, 120), new Vector2(0, 60));
 
             return SavePopup(rt.gameObject, Dir + "/Popups/OnboardingPopup.prefab");
-        }
-
-        static GameObject BuildGaragePopup()
-        {
-            var (rt, card, _) = PopupRoot("VehiclesPopup", 50, 240);
-            var gp = rt.gameObject.AddComponent<GaragePopup>();
-            var t = Txt(card, "Title", "GARAGE", 64, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(500, 90), new Vector2(0, -40));
-            gp.closeButton = Btn(card, "Close", "X", Accent2, Ink, 44); Box((RectTransform)gp.closeButton.transform, new Vector2(1, 1), new Vector2(90, 90), new Vector2(-24, -24));
-            var content = RT(card, "Content"); Stretch(content, 30, 30, 150, 40);
-            var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>(); vlg.spacing = 14; vlg.childForceExpandHeight = false; vlg.childControlHeight = false; vlg.childControlWidth = true; vlg.childForceExpandWidth = true;
-            gp.content = content;
-            gp.rowTemplate = BuildRow(content);
-            return SavePopup(rt.gameObject, Dir + "/Popups/VehiclesPopup.prefab");
         }
 
         static GameObject BuildMissionsPopup()
@@ -344,16 +330,6 @@ namespace DriftTherapy.EditorTools
             rt.anchorMin = new Vector2(i / (float)totalSlots, 0); rt.anchorMax = new Vector2((i + 1) / (float)totalSlots, 1);
             rt.pivot = new Vector2(0.5f, 0.5f); rt.offsetMin = new Vector2(8, 16); rt.offsetMax = new Vector2(-8, -16);
             return b;
-        }
-
-        static GameObject BuildRow(Transform content)
-        {
-            var row = Img(content, "RowTemplate", Dark);
-            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 150; le.preferredHeight = 150;
-            var sw = Img(row.transform, "Swatch", Accent); Box((RectTransform)sw.transform, new Vector2(0, 0.5f), new Vector2(190, 110), new Vector2(20, 0));
-            var nm = Txt(row.transform, "Name", "Car", 38, White, TextAlignmentOptions.Left); Box(nm.rectTransform, new Vector2(0, 0.5f), new Vector2(360, 60), new Vector2(240, 0));
-            var act = Btn(row.transform, "Action", "BUY", Coin, Ink, 32); Box((RectTransform)act.transform, new Vector2(1, 0.5f), new Vector2(260, 100), new Vector2(-20, 0));
-            return row.gameObject;
         }
 
         static GameObject BuildMissionRow(Transform content)

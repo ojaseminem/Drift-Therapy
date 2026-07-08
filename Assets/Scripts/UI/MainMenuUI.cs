@@ -23,7 +23,7 @@ namespace DriftTherapy
 
         [Header("Popups")]
         public PopupHandler popups;
-        public GameObject missionsPopup, vehiclesPopup, shopPopup, trialsPopup, leaderboardPopup, settingsPopup, onboardingPopup;
+        public GameObject missionsPopup, shopPopup, trialsPopup, leaderboardPopup, settingsPopup, onboardingPopup;
 
         GameApp app;
         int lastCoins = -1, lastGems = -1;
@@ -33,7 +33,9 @@ namespace DriftTherapy
             app = GameApp.Instance;
 
             Bind(runButton, () => SceneFlow.GoToGame());
-            Bind(garageButton, () => { if (popups) popups.Open(vehiclesPopup); });
+            // Garage is a full scene (with the vehicle carousel + 3D turntable),
+            // not a popup — reached via the same fade-transition SceneLoader RUN uses.
+            Bind(garageButton, () => SceneFlow.GoToGarage());
             Bind(missionsButton, () => { if (popups) popups.Open(missionsPopup); });
             Bind(trialsButton, () => { if (popups) popups.Open(trialsPopup); });
             Bind(shopButton, () => { if (popups) popups.Open(shopPopup); });

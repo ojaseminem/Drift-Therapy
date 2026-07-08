@@ -106,6 +106,12 @@ namespace DriftTherapy
                     cardIndex++;
                 }
 
+                // Content's own width must span every card, or ScrollRect concludes
+                // there's nothing to scroll and snaps anchoredPosition back to
+                // (0,0) every frame regardless of what SnapTo sets it to.
+                var contentRt = content as RectTransform;
+                if (contentRt != null) contentRt.sizeDelta = new Vector2(cardWidth * count, contentRt.sizeDelta.y);
+
                 int startIndex = IndexOfSelected();
                 carousel.SnapTo(startIndex, animate: false);
                 OnIndexChanged(startIndex); // SnapTo only fires IndexChanged on an actual change; guarantee the initial 3D show.
