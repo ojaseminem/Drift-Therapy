@@ -84,7 +84,16 @@ namespace DriftTherapy.EditorTools
         static RectTransform Box(RectTransform rt, Vector2 a, Vector2 size, Vector2 off)
         { rt.anchorMin = a; rt.anchorMax = a; rt.pivot = a; rt.sizeDelta = size; rt.anchoredPosition = off; return rt; }
 
-        static (GameObject root, RectTransform canvas) NewScreen(string name)
+        /// <summary>
+        /// Builds a screen's Canvas + safe-area content root + EventSystem.
+        /// Returns <c>canvas</c> (the safe-area child — actual readable/interactive
+        /// content parents here, exactly as before) AND <c>rawCanvas</c> (the raw,
+        /// full-bleed Canvas — ONLY full-screen backgrounds/scrims should parent
+        /// here, so they cover every edge regardless of notch/cutout insets; see
+        /// PopupHandler wiring in BuildMenu()/BuildGarage() and the pause/end
+        /// Scrim() calls in BuildGame()).
+        /// </summary>
+        static (GameObject root, RectTransform canvas, RectTransform rawCanvas) NewScreen(string name)
         {
             var root = new GameObject(name);
             var cgo = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -97,17 +106,16 @@ namespace DriftTherapy.EditorTools
             var es = new GameObject("EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
             es.transform.SetParent(root.transform, false);
 
-            // Everything else parents under this safe-area child, not the raw
-            // Canvas — every existing Img(canvas,...)/Txt(canvas,...) call site
-            // automatically inherits notch/cutout/gesture-bar insets with zero
-            // changes elsewhere, since "canvas" now IS the safe area.
+            // Actual content parents under this safe-area child — every existing
+            // Img(canvas,...)/Txt(canvas,...) call site automatically inherits
+            // notch/cutout/gesture-bar insets with zero changes elsewhere.
             var safeAreaGo = new GameObject("SafeArea", typeof(RectTransform));
             safeAreaGo.transform.SetParent(cgo.transform, false);
             var safeAreaRt = (RectTransform)safeAreaGo.transform;
             Stretch(safeAreaRt);
             safeAreaGo.AddComponent<SafeAreaFitter>();
 
-            return (root, safeAreaRt);
+            return (root, safeAreaRt, (RectTransform)cgo.transform);
         }
 
         static RectTransform Scrim(Transform p, out RectTransform card, float pad, float topPad)
@@ -123,9 +131,11 @@ namespace DriftTherapy.EditorTools
         // ── Menu ─────────────────────────────────────────────────────────────
         static void BuildMenu()
         {
-            var (root, canvas) = NewScreen("MenuUI");
+            var (root, canvas, rawCanvas) = NewScreen("MenuUI");
             var ui = root.AddComponent<MainMenuUI>();
-            var bg = Img(canvas, "Bg", Bg); Stretch((RectTransform)bg.transform);
+            // Full-bleed screen background — parents under the raw canvas (not the
+            // safe-area child) so it covers every corner regardless of notch insets.
+            var bg = Img(rawCanvas, "Bg", Bg); Stretch((RectTransform)bg.transform);
 
             // top bar
             var bar = Img(canvas, "TopBar", Dark);
@@ -166,8 +176,10 @@ namespace DriftTherapy.EditorTools
             ui.shopButton        = NavBtn(nav.transform, "Shop", 4, navSlots);
             ui.leaderboardButton = NavBtn(nav.transform, "Ranks", 5, navSlots);
 
-            // popups: one handler under the canvas; each screen is its own prefab
-            var ph = RT(canvas, "PopupHandler"); Stretch(ph);
+            // popups: one handler under the RAW canvas (not the safe-area child) so
+            // each popup's full-screen scrim actually reaches every edge — see
+            // NewScreen()'s doc comment.
+            var ph = RT(rawCanvas, "PopupHandler"); Stretch(ph);
             ui.popups = ph.gameObject.AddComponent<PopupHandler>();
             ui.vehiclesPopup    = BuildGaragePopup();
             ui.missionsPopup    = BuildMissionsPopup();
@@ -378,7 +390,7 @@ namespace DriftTherapy.EditorTools
         // ── Game HUD ─────────────────────────────────────────────────────────
         static void BuildGame()
         {
-            var (root, canvas) = NewScreen("GameUI");
+            var (root, canvas, rawCanvas) = NewScreen("GameUI");
             var ui = root.AddComponent<GameHudUI>();
             ui.coinFly = canvas.gameObject.AddComponent<CoinFlyEffect>();
             // NOTE: ui.player is a scene reference (the PlayerCar object in
@@ -408,15 +420,16 @@ namespace DriftTherapy.EditorTools
             ui.countdownText = Txt(canvas, "Countdown", "3", 220, Accent, TextAlignmentOptions.Center); Box(ui.countdownText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(600, 320), new Vector2(0, 120));
             ui.nearMissText = Txt(canvas, "NearMiss", "NEAR MISS!", 56, Accent2, TextAlignmentOptions.Center); Box(ui.nearMissText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(760, 90), new Vector2(0, -160));
 
-            // pause panel
-            var pause = Scrim(canvas, out var pcard, 70, 360); ui.pausePanel = pause.gameObject;
+            // pause panel — scrim parents under the raw canvas so it's full-bleed;
+            // Card keeps its existing fixed pixel padding.
+            var pause = Scrim(rawCanvas, out var pcard, 70, 360); ui.pausePanel = pause.gameObject;
             CardTitle(pcard, "PAUSED");
             ui.resumeButton = StackBtn(pcard, "Resume", "RESUME", Accent, Ink, 0);
             ui.restartButton = StackBtn(pcard, "Restart", "RESTART", Coin, Ink, 1);
             ui.homeButton = StackBtn(pcard, "Home", "HOME", Panel, White, 2);
 
-            // end panel
-            var end = Scrim(canvas, out var ecard, 60, 240); ui.endPanel = end.gameObject;
+            // end panel — same full-bleed-scrim fix as the pause panel above.
+            var end = Scrim(rawCanvas, out var ecard, 60, 240); ui.endPanel = end.gameObject;
             CardTitle(ecard, "RUN OVER");
 
             var banner = Img(ecard, "ResultBanner", Dark);
