@@ -43,9 +43,10 @@ namespace DriftTherapy.EditorTools
             if (!Directory.Exists(Dir + "/Popups")) Directory.CreateDirectory(Dir + "/Popups");
             BuildMenu();
             BuildGame();
+            BuildGarage();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[UIBuilder] Built MenuUI.prefab and GameUI.prefab");
+            Debug.Log("[UIBuilder] Built MenuUI.prefab, GameUI.prefab, and GarageUI.prefab");
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────
@@ -492,6 +493,129 @@ namespace DriftTherapy.EditorTools
             Box((RectTransform)ui.endHomeButton.transform, new Vector2(0.5f, 0), new Vector2(480, 104), new Vector2(0, 54));
 
             Save(root, Dir + "/GameUI.prefab");
+        }
+
+        // ── Garage ───────────────────────────────────────────────────────────
+        const float GarageCardWidth = 1080f;
+
+        static void BuildGarage()
+        {
+            var (root, canvas, rawCanvas) = NewScreen("GarageUI");
+            var ui = root.AddComponent<GarageUI>();
+            // No Bg image — this is a real 3D scene (Garage.unity); the turntable
+            // car renders directly behind this transparent-background canvas.
+
+            // top bar: level + currencies + home
+            ui.levelText = Txt(canvas, "Level", "GARAGE LVL 1", 34, White, TextAlignmentOptions.Left);
+            Box(ui.levelText.rectTransform, new Vector2(0, 1), new Vector2(420, 60), new Vector2(40, -50));
+
+            ui.coinsText = Chip(canvas, "Coins", Coin, new Vector2(1, 1), new Vector2(-40, -50));
+            ui.gemsText  = Chip(canvas, "Gems", Gem, new Vector2(1, 1), new Vector2(-40, -140));
+
+            ui.homeButton = Btn(canvas, "Home", "HOME", Panel, White, 28);
+            Box((RectTransform)ui.homeButton.transform, new Vector2(0, 0), new Vector2(220, 90), new Vector2(40, 40));
+
+            // drag-catcher over the 3D viewport region (upper ~60% of the screen) —
+            // invisible (alpha 0) but still raycastable, spatially separate from the
+            // carousel band below so the two drag gestures never conflict.
+            var dragCatcherImg = Img(canvas, "DragCatcher", new Color(0, 0, 0, 0));
+            var dragRt = (RectTransform)dragCatcherImg.transform;
+            dragRt.anchorMin = new Vector2(0, 0.42f); dragRt.anchorMax = new Vector2(1, 1);
+            dragRt.offsetMin = Vector2.zero; dragRt.offsetMax = Vector2.zero;
+            ui.dragCatcher = dragCatcherImg.gameObject.AddComponent<GarageDragCatcher>();
+
+            // carousel band (lower ~35% of the screen)
+            var carouselArea = RT(canvas, "CarouselArea");
+            carouselArea.anchorMin = new Vector2(0, 0.03f); carouselArea.anchorMax = new Vector2(1, 0.38f);
+            carouselArea.offsetMin = Vector2.zero; carouselArea.offsetMax = Vector2.zero;
+
+            var viewportImg = Img(carouselArea, "Viewport", new Color(0, 0, 0, 0));
+            var viewportRt = (RectTransform)viewportImg.transform; Stretch(viewportRt);
+            viewportImg.gameObject.AddComponent<RectMask2D>();
+
+            // Cards are positioned manually by GarageUI.Populate() (anchoredPosition =
+            // index * runtime viewport width), not via a HorizontalLayoutGroup —
+            // script-driven LayoutElement width changes didn't reliably propagate
+            // through Unity's automatic layout pass timing in practice; direct
+            // RectTransform control is simpler and fully deterministic here, and
+            // SnapCarousel already assumes exact index*cardWidth spacing anyway.
+            var contentRt = RT(viewportRt, "Content");
+            contentRt.anchorMin = new Vector2(0, 0); contentRt.anchorMax = new Vector2(0, 1);
+            contentRt.pivot = new Vector2(0, 0.5f);
+
+            var scrollRect = carouselArea.gameObject.AddComponent<ScrollRect>();
+            scrollRect.horizontal = true; scrollRect.vertical = false;
+            scrollRect.movementType = ScrollRect.MovementType.Elastic;
+            scrollRect.inertia = true;
+            scrollRect.viewport = viewportRt;
+            scrollRect.content = contentRt;
+
+            ui.carousel = carouselArea.gameObject.AddComponent<SnapCarousel>();
+            var soCarousel = new SerializedObject(ui.carousel);
+            soCarousel.FindProperty("scrollRect").objectReferenceValue = scrollRect;
+            soCarousel.FindProperty("content").objectReferenceValue = contentRt;
+            soCarousel.ApplyModifiedProperties();
+
+            ui.content = contentRt;
+            ui.cardTemplate = BuildGarageCard(contentRt);
+
+            // purchase confirmation — its own PopupHandler under the raw canvas
+            // (Garage is a separate scene from Menu, can't share PopupHandlers).
+            var ph = RT(rawCanvas, "PopupHandler"); Stretch(ph);
+            ui.popups = ph.gameObject.AddComponent<PopupHandler>();
+            ui.purchaseConfirmPopup = BuildPurchaseConfirmPopup();
+
+            Save(root, Dir + "/GarageUI.prefab");
+        }
+
+        static GameObject BuildGarageCard(Transform content)
+        {
+            var card = Img(content, "CardTemplate", new Color(0.12f, 0.14f, 0.19f, 0.92f));
+            var cardRt = (RectTransform)card.transform;
+            cardRt.anchorMin = new Vector2(0, 0); cardRt.anchorMax = new Vector2(0, 1); cardRt.pivot = new Vector2(0, 0.5f);
+            cardRt.sizeDelta = new Vector2(GarageCardWidth, 0); // width corrected to the true runtime viewport width by GarageUI.Populate()
+
+            var name = Txt(card.transform, "Name", "Vehicle", 48, White);
+            Box(name.rectTransform, new Vector2(0.5f, 1), new Vector2(700, 70), new Vector2(0, -20));
+
+            GarageSpecBar(card.transform, "SpeedBar", "SPEED", 0);
+            GarageSpecBar(card.transform, "HandlingBar", "HANDLING", 1);
+            GarageSpecBar(card.transform, "BoostBar", "BOOST", 2);
+
+            var coinsPrice = Txt(card.transform, "CoinsPrice", "0", 34, Coin, TextAlignmentOptions.Left);
+            Box(coinsPrice.rectTransform, new Vector2(0, 0), new Vector2(240, 50), new Vector2(40, 90));
+            var gemsPrice = Txt(card.transform, "GemsPrice", "0", 34, Gem, TextAlignmentOptions.Left);
+            Box(gemsPrice.rectTransform, new Vector2(0, 0), new Vector2(240, 50), new Vector2(300, 90));
+
+            var action = Btn(card.transform, "Action", "BUY", Coin, Ink, 34);
+            Box((RectTransform)action.transform, new Vector2(1, 0), new Vector2(300, 90), new Vector2(-40, 40));
+
+            return card.gameObject;
+        }
+
+        static void GarageSpecBar(Transform card, string name, string label, int row)
+        {
+            float y = -110 - row * 50;
+            var lbl = Txt(card, name + "Label", label, 22, Dim, TextAlignmentOptions.Left);
+            Box(lbl.rectTransform, new Vector2(0, 1), new Vector2(200, 34), new Vector2(40, y));
+            var bar = Bar(card, name, Dark, Accent);
+            Box((RectTransform)bar.parent, new Vector2(0, 1), new Vector2(760, 20), new Vector2(260, y - 6));
+        }
+
+        static GameObject BuildPurchaseConfirmPopup()
+        {
+            var (rt, cardRt, _) = PopupRoot("PurchaseConfirmPopup", 90, 600);
+            var pc = rt.gameObject.AddComponent<PurchaseConfirmPopup>();
+            var t = Txt(cardRt, "Title", "BUY VEHICLE?", 50, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(600, 80), new Vector2(0, -30));
+            pc.closeButton = Btn(cardRt, "Close", "X", Accent2, Ink, 40); Box((RectTransform)pc.closeButton.transform, new Vector2(1, 1), new Vector2(80, 80), new Vector2(-20, -20));
+
+            pc.nameText = Txt(cardRt, "Name", "Vehicle", 40, White); Box(pc.nameText.rectTransform, new Vector2(0.5f, 1), new Vector2(500, 60), new Vector2(0, -140));
+            pc.priceText = Txt(cardRt, "Price", "0 COINS", 34, Coin); Box(pc.priceText.rectTransform, new Vector2(0.5f, 1), new Vector2(500, 60), new Vector2(0, -210));
+
+            pc.confirmButton = Btn(cardRt, "Confirm", "CONFIRM", Coin, Ink, 36);
+            Box((RectTransform)pc.confirmButton.transform, new Vector2(0.5f, 0), new Vector2(420, 100), new Vector2(0, 40));
+
+            return SavePopup(rt.gameObject, Dir + "/Popups/PurchaseConfirmPopup.prefab");
         }
 
         static void CardTitle(Transform card, string s)

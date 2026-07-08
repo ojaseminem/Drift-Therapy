@@ -1,0 +1,227 @@
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace DriftTherapy
+{
+    /// <summary>
+    /// Binds the authored Garage screen (carousel of vehicle cards + stats +
+    /// purchase flow) to <see cref="GameApp"/> and the scene's
+    /// <see cref="GarageVehicleDisplay"/>. Mirrors <see cref="MissionsPopup"/>'s
+    /// Populate()/GameApp.Changed pattern. Does not build UI.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public class GarageUI : MonoBehaviour
+    {
+        [Header("Stats")]
+        public TMP_Text levelText, coinsText, gemsText;
+
+        [Header("Carousel")]
+        public SnapCarousel carousel;
+        public Transform content;
+        public GameObject cardTemplate;
+
+        [Header("3D display / input")]
+        [Tooltip("Scene reference (the 3D turntable display) — resolved at runtime via FindFirstObjectByType since this is a UI-only prefab.")]
+        public GarageDragCatcher dragCatcher;
+
+        [Header("Navigation")]
+        public Button homeButton;
+
+        [Header("Purchase confirmation")]
+        public PopupHandler popups;
+        public GameObject purchaseConfirmPopup;
+
+        GameApp app;
+        GarageVehicleDisplay display;
+
+        void Start()
+        {
+            app = GameApp.Instance;
+            display = FindFirstObjectByType<GarageVehicleDisplay>();
+            if (dragCatcher != null) dragCatcher.display = display;
+
+            Bind(homeButton, () => SceneFlow.GoToMenu());
+
+            if (cardTemplate) cardTemplate.SetActive(false);
+            if (carousel != null) carousel.IndexChanged += OnIndexChanged;
+
+            Populate();
+
+            if (app != null) app.Changed += Refresh;
+        }
+
+        void OnDestroy()
+        {
+            if (app != null) app.Changed -= Refresh;
+            if (carousel != null) carousel.IndexChanged -= OnIndexChanged;
+        }
+
+        static void Bind(Button b, System.Action a) { if (b) { b.onClick.RemoveAllListeners(); b.onClick.AddListener(() => a()); } }
+
+        void Populate()
+        {
+            if (app == null || content == null || cardTemplate == null) return;
+
+            for (int i = content.childCount - 1; i >= 0; i--)
+            {
+                var c = content.GetChild(i);
+                if (c.gameObject != cardTemplate) Destroy(c.gameObject);
+            }
+
+            var defs = app.Vehicles;
+            int count = 0;
+            for (int i = 0; i < defs.Count; i++)
+            {
+                var v = defs[i];
+                if (v == null) continue;
+                var card = Instantiate(cardTemplate, content);
+                card.SetActive(true);
+                FillCard(card.transform, v);
+                count++;
+            }
+
+            if (carousel != null)
+            {
+                carousel.SetCardCount(Mathf.Max(1, count));
+
+                // Cards are positioned/sized directly here rather than via an
+                // automatic layout group — script-driven LayoutElement width
+                // changes didn't reliably propagate through Unity's layout pass
+                // timing in practice. This guarantees exactly one card per
+                // viewport width, index*cardWidth apart, matching what
+                // SnapCarousel's snap math already assumes.
+                float cardWidth = carousel.CardWidth;
+                int cardIndex = 0;
+                for (int i = 0; i < content.childCount; i++)
+                {
+                    var c = content.GetChild(i);
+                    if (c.gameObject == cardTemplate) continue;
+                    var cardRt = c as RectTransform;
+                    if (cardRt != null)
+                    {
+                        cardRt.sizeDelta = new Vector2(cardWidth, 0f);
+                        cardRt.anchoredPosition = new Vector2(cardIndex * cardWidth, 0f);
+                    }
+                    cardIndex++;
+                }
+
+                int startIndex = IndexOfSelected();
+                carousel.SnapTo(startIndex, animate: false);
+                OnIndexChanged(startIndex); // SnapTo only fires IndexChanged on an actual change; guarantee the initial 3D show.
+            }
+
+            RefreshStats();
+        }
+
+        /// <summary>Re-fills existing cards in place (affordability/ownership can change without needing a re-layout).</summary>
+        void Refresh()
+        {
+            if (app == null || content == null) return;
+            var defs = app.Vehicles;
+            int di = 0;
+            for (int i = 0; i < content.childCount; i++)
+            {
+                var card = content.GetChild(i);
+                if (card.gameObject == cardTemplate) continue;
+                if (di >= defs.Count) break;
+                FillCard(card, defs[di]);
+                di++;
+            }
+            RefreshStats();
+        }
+
+        void RefreshStats()
+        {
+            if (app == null) return;
+            if (levelText) levelText.text = "GARAGE LVL " + app.Data.level;
+            if (coinsText) coinsText.text = app.Data.coins.ToString();
+            if (gemsText) gemsText.text = app.Data.gems.ToString();
+        }
+
+        int IndexOfSelected()
+        {
+            var defs = app.Vehicles;
+            string selId = app.Data.selectedVehicleId;
+            for (int i = 0; i < defs.Count; i++)
+                if (defs[i] != null && defs[i].id == selId) return i;
+            return 0;
+        }
+
+        void OnIndexChanged(int index)
+        {
+            var defs = app.Vehicles;
+            if (index < 0 || index >= defs.Count || defs[index] == null) return;
+            if (display != null) display.Show(defs[index]);
+        }
+
+        void FillCard(Transform card, VehicleDef v)
+        {
+            var nameText = card.Find("Name")?.GetComponent<TMP_Text>();
+            if (nameText) nameText.text = v.displayName;
+
+            SetSpecBar(card, "SpeedBar", v.specSpeed);
+            SetSpecBar(card, "HandlingBar", v.specHandling);
+            SetSpecBar(card, "BoostBar", v.specBoost);
+
+            bool owned = app.Owns(v.id);
+            bool equipped = app.Data.selectedVehicleId == v.id;
+            bool hasCoinsPrice = v.price > 0;
+            bool hasGemsPrice = v.gemPrice > 0;
+
+            var coinsPriceText = card.Find("CoinsPrice")?.GetComponent<TMP_Text>();
+            if (coinsPriceText)
+            {
+                coinsPriceText.gameObject.SetActive(!owned && hasCoinsPrice);
+                if (hasCoinsPrice) coinsPriceText.text = FormatPrice(v.price, app.Data.coins >= v.price);
+            }
+
+            var gemsPriceText = card.Find("GemsPrice")?.GetComponent<TMP_Text>();
+            if (gemsPriceText)
+            {
+                gemsPriceText.gameObject.SetActive(!owned && hasGemsPrice);
+                if (hasGemsPrice) gemsPriceText.text = FormatPrice(v.gemPrice, app.Data.gems >= v.gemPrice);
+            }
+
+            var actionT = card.Find("Action");
+            var action = actionT ? actionT.GetComponent<Button>() : null;
+            var label = actionT ? actionT.Find("Label")?.GetComponent<TMP_Text>() : null;
+            if (label) label.text = equipped ? "EQUIPPED" : owned ? "EQUIP" : "BUY";
+            if (action)
+            {
+                action.interactable = !equipped;
+                action.onClick.RemoveAllListeners();
+                action.onClick.AddListener(() => OnCardAction(v));
+            }
+        }
+
+        /// <summary>Strikethrough via TMP's native rich-text tag when unaffordable — no custom font/shader needed.</summary>
+        static string FormatPrice(int amount, bool affordable) => affordable ? amount.ToString() : "<s>" + amount + "</s>";
+
+        static void SetSpecBar(Transform card, string barName, int value0to100)
+        {
+            var fill = card.Find(barName + "/Fill")?.GetComponent<RectTransform>();
+            if (fill == null) return;
+            var a = fill.anchorMax;
+            a.x = Mathf.Clamp01(value0to100 / 100f);
+            fill.anchorMax = a;
+        }
+
+        void OnCardAction(VehicleDef v)
+        {
+            if (app.Owns(v.id))
+            {
+                app.Select(v.id);
+                return;
+            }
+
+            // Only a gem price set -> pay with gems; otherwise default to coins.
+            bool useGems = v.price <= 0 && v.gemPrice > 0;
+
+            if (popups == null || purchaseConfirmPopup == null) return;
+            var popupGo = popups.Open(purchaseConfirmPopup);
+            var confirm = popupGo != null ? popupGo.GetComponent<PurchaseConfirmPopup>() : null;
+            if (confirm != null) confirm.Show(v, useGems, Populate);
+        }
+    }
+}

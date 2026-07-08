@@ -54,6 +54,18 @@ namespace DriftTherapy
             anchorMax.x /= Screen.width;
             anchorMax.y /= Screen.height;
 
+            // A valid safe-area anchor can never legitimately fall outside 0..1 —
+            // clamp defensively. Found in practice: Unity's Device Simulator can
+            // report Screen.safeArea in native device pixels while Screen.width/
+            // height report the simulator's scaled preview resolution, producing
+            // anchors like 2.9 instead of ~1.0. Clamping falls back to "no inset"
+            // rather than a badly oversized layout when that happens, and is a
+            // no-op on real devices where the two are always consistent.
+            anchorMin.x = Mathf.Clamp01(anchorMin.x);
+            anchorMin.y = Mathf.Clamp01(anchorMin.y);
+            anchorMax.x = Mathf.Clamp01(anchorMax.x);
+            anchorMax.y = Mathf.Clamp01(anchorMax.y);
+
             rt.anchorMin = anchorMin;
             rt.anchorMax = anchorMax;
             rt.offsetMin = Vector2.zero;

@@ -212,10 +212,14 @@ namespace DriftTherapy
         public VehicleDef Selected => GetVehicle(Data.selectedVehicleId);
         public bool Owns(string id) => Data.ownedVehicleIds.Contains(id);
 
-        public bool TryBuy(VehicleDef v)
+        public bool TryBuy(VehicleDef v) => TryBuy(v, useGems: false);
+
+        /// <summary>Buys with coins (useGems: false) or gems (useGems: true). Returns false if already owned or insufficient balance.</summary>
+        public bool TryBuy(VehicleDef v, bool useGems)
         {
             if (v == null || Owns(v.id)) return false;
-            if (!TrySpendCoins(v.price)) return false;
+            bool spent = useGems ? TrySpendGems(v.gemPrice) : TrySpendCoins(v.price);
+            if (!spent) return false;
             Data.ownedVehicleIds.Add(v.id);
             Save();
             Changed?.Invoke();
@@ -239,6 +243,14 @@ namespace DriftTherapy
         {
             if (amount < 0 || Data.coins < amount) return false;
             Data.coins -= amount;
+            Changed?.Invoke();
+            return true;
+        }
+
+        public bool TrySpendGems(int amount)
+        {
+            if (amount < 0 || Data.gems < amount) return false;
+            Data.gems -= amount;
             Changed?.Invoke();
             return true;
         }
