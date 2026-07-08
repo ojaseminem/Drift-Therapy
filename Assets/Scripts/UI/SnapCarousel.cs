@@ -13,7 +13,7 @@ namespace DriftTherapy
     /// wiring point between swiping and <see cref="GarageVehicleDisplay.Show"/>.
     /// </summary>
     [DisallowMultipleComponent]
-    public class SnapCarousel : MonoBehaviour, IEndDragHandler
+    public class SnapCarousel : MonoBehaviour, IBeginDragHandler, IEndDragHandler
     {
         [SerializeField] ScrollRect scrollRect;
         [SerializeField] RectTransform content;
@@ -51,17 +51,41 @@ namespace DriftTherapy
             index = Mathf.Clamp(index, 0, cardCount - 1);
             float targetX = -index * cardWidth;
 
+            // ScrollRect's own inertia/elastic-bounce keeps writing to
+            // content.anchoredPosition every LateUpdate after a drag ends, which
+            // fights the tween below and stops the carousel from ever fully
+            // resting on a card. Hand exclusive control of the position to
+            // DOTween for the duration of the snap, then give it back.
+            if (scrollRect != null)
+            {
+                scrollRect.StopMovement();
+                scrollRect.enabled = false;
+            }
+
             DOTween.Kill(content, complete: false);
             if (animate)
-                content.DOAnchorPosX(targetX, snapDuration).SetId(content).SetUpdate(true).SetEase(Ease.OutQuad);
+            {
+                content.DOAnchorPosX(targetX, snapDuration).SetId(content).SetUpdate(true).SetEase(Ease.OutQuad)
+                    .OnComplete(() => { if (scrollRect != null) scrollRect.enabled = true; });
+            }
             else
+            {
                 content.anchoredPosition = new Vector2(targetX, content.anchoredPosition.y);
+                if (scrollRect != null) scrollRect.enabled = true;
+            }
 
             if (index != CurrentIndex)
             {
                 CurrentIndex = index;
                 IndexChanged?.Invoke(CurrentIndex);
             }
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            // Re-enable immediately so a new drag can interrupt an in-flight snap.
+            if (scrollRect != null) scrollRect.enabled = true;
+            DOTween.Kill(content, complete: false);
         }
 
         public void OnEndDrag(PointerEventData eventData)
