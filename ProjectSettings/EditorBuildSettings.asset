@@ -11,5 +11,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/DriftEndless.unity
     guid: d753d525b448ad44eb6dc57439c8a846
+  - enabled: 1
+    path: Assets/Scenes/Garage.unity
+    guid: 00244c936780c67479b46d1fac4082cb
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

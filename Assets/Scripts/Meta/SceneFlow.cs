@@ -12,9 +12,11 @@ namespace DriftTherapy
     {
         public const string Menu = "MainMenu";
         public const string Game = "DriftEndless";
+        public const string Garage = "Garage";
 
-        public static void GoToGame() => SceneLoader.Instance.Load(Game);
-        public static void GoToMenu() => SceneLoader.Instance.Load(Menu);
-        public static void Reload()   => SceneLoader.Instance.Load(SceneManager.GetActiveScene().name);
+        public static void GoToGame()   => SceneLoader.Instance.Load(Game);
+        public static void GoToMenu()   => SceneLoader.Instance.Load(Menu);
+        public static void GoToGarage() => SceneLoader.Instance.Load(Garage);
+        public static void Reload()     => SceneLoader.Instance.Load(SceneManager.GetActiveScene().name);
     }
 }
