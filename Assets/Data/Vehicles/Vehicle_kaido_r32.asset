@@ -10,40 +10,40 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9edc3080a4883384b93b22770b4843da, type: 3}
-  m_Name: Vehicle_Violet
+  m_Name: Vehicle_kaido_r32
   m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.VehicleDef
-  id: kaido_180sx
-  displayName: Kaido 180SX TypeX
-  price: 1500
+  id: kaido_r32
+  displayName: Kaido Skyline R32
+  price: 5200
   gemPrice: 0
   ownedByDefault: 0
-  bodyColor: {r: 0.55, g: 0.35, b: 0.85, a: 1}
-  prefab: {fileID: 8557317350992945109, guid: 7c79a09e089d8464c86830104b21d967, type: 3}
-  specSpeed: 48
-  specHandling: 58
-  specBoost: 52
+  bodyColor: {r: 0.4, g: 0.2, b: 0.6, a: 1}
+  prefab: {fileID: 6263950151519020536, guid: 2f1a654347479d24eb44bcca3bc18d78, type: 3}
+  specSpeed: 70
+  specHandling: 62
+  specBoost: 66
   skins:
   - id: factory
     displayName: Factory
-    color: {r: 0.55, g: 0.35, b: 0.85, a: 1}
+    color: {r: 0.4, g: 0.2, b: 0.6, a: 1}
     price: 0
     gemPrice: 0
     ownedByDefault: 1
   - id: stealth
     displayName: Stealth
     color: {r: 0.07, g: 0.08, b: 0.1, a: 1}
-    price: 255
+    price: 500
     gemPrice: 0
     ownedByDefault: 0
   - id: pearl
     displayName: Pearl
     color: {r: 0.95, g: 0.95, b: 0.97, a: 1}
-    price: 355
+    price: 670
     gemPrice: 0
     ownedByDefault: 0
   - id: rally
     displayName: Rally
-    color: {r: 0.9, g: 0.8388, b: 0.13499998, a: 1}
-    price: 485
+    color: {r: 0.8847, g: 0.9, b: 0.13499998, a: 1}
+    price: 870
     gemPrice: 0
     ownedByDefault: 0

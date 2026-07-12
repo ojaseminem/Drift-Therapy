@@ -77,7 +77,7 @@ namespace DriftTherapy
             if (swatch)
             {
                 var vehicle = app != null ? app.GetVehicle(entry.vehicleId) : null;
-                swatch.color = vehicle != null ? vehicle.bodyColor : Color.white;
+                swatch.color = vehicle != null ? app.GetEquippedColor(vehicle.id) : Color.white;
             }
 
             var distanceText = row.Find("Distance")?.GetComponent<TMP_Text>();

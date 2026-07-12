@@ -34,6 +34,14 @@ namespace DriftTherapy
         public string vehicleId;
     }
 
+    /// <summary>Which skin is equipped on one owned vehicle. Keyed by vehicleId.</summary>
+    [Serializable]
+    public class EquippedSkinState
+    {
+        public string vehicleId;
+        public string skinId;
+    }
+
     /// <summary>Persistent player save model (JSON via PlayerPrefs).</summary>
     [Serializable]
     public class PlayerData
@@ -47,6 +55,10 @@ namespace DriftTherapy
         public float bestDistanceMeters;
         public string selectedVehicleId = "";
         public List<string> ownedVehicleIds = new List<string>();
+
+        // ── Vehicle skins (colour variants, keyed "vehicleId:skinId") ───────
+        public List<string> ownedSkinKeys = new List<string>();
+        public List<EquippedSkinState> equippedSkins = new List<EquippedSkinState>();
         public float musicVolume = 1f;
         public float sfxVolume = 1f;
         public bool haptics = true;
@@ -133,6 +145,8 @@ namespace DriftTherapy
         void EnsureDefaults()
         {
             if (Data.ownedVehicleIds == null) Data.ownedVehicleIds = new List<string>();
+            if (Data.ownedSkinKeys == null) Data.ownedSkinKeys = new List<string>();
+            if (Data.equippedSkins == null) Data.equippedSkins = new List<EquippedSkinState>();
 
             // Grant any default-owned vehicles.
             if (vehicles != null)
@@ -147,6 +161,16 @@ namespace DriftTherapy
             if (string.IsNullOrEmpty(Data.selectedVehicleId) ||
                 !Data.ownedVehicleIds.Contains(Data.selectedVehicleId))
                 Data.selectedVehicleId = Data.ownedVehicleIds.Count > 0 ? Data.ownedVehicleIds[0] : "";
+
+            // Grant each vehicle's default skin.
+            if (vehicles != null)
+                foreach (var v in vehicles)
+                {
+                    if (v == null || v.skins == null) continue;
+                    foreach (var s in v.skins)
+                        if (s != null && s.ownedByDefault && !Data.ownedSkinKeys.Contains(SkinKey(v.id, s.id)))
+                            Data.ownedSkinKeys.Add(SkinKey(v.id, s.id));
+                }
 
             EnsureDailyChallenge();
         }
@@ -230,6 +254,69 @@ namespace DriftTherapy
         {
             if (!Owns(id)) return;
             Data.selectedVehicleId = id;
+            Save();
+            Changed?.Invoke();
+        }
+
+        // ── Vehicle skins ────────────────────────────────────────────────────
+        static string SkinKey(string vehicleId, string skinId) => vehicleId + ":" + skinId;
+
+        static VehicleSkinDef DefaultSkin(VehicleDef v)
+        {
+            if (v == null || v.skins == null || v.skins.Length == 0) return null;
+            foreach (var s in v.skins) if (s != null && s.ownedByDefault) return s;
+            return v.skins[0];
+        }
+
+        public bool OwnsSkin(string vehicleId, string skinId) => Data.ownedSkinKeys.Contains(SkinKey(vehicleId, skinId));
+
+        /// <summary>The id of the skin currently equipped on <paramref name="vehicleId"/>, falling back to its default skin.</summary>
+        public string GetEquippedSkinId(string vehicleId)
+        {
+            for (int i = 0; i < Data.equippedSkins.Count; i++)
+                if (Data.equippedSkins[i].vehicleId == vehicleId) return Data.equippedSkins[i].skinId;
+            var def = DefaultSkin(GetVehicle(vehicleId));
+            return def != null ? def.id : null;
+        }
+
+        /// <summary>The colour to render for a vehicle right now — its equipped skin, or bodyColor if it has no skins defined.</summary>
+        public Color GetEquippedColor(string vehicleId)
+        {
+            var v = GetVehicle(vehicleId);
+            if (v == null) return Color.white;
+            string skinId = GetEquippedSkinId(vehicleId);
+            if (v.skins != null)
+                foreach (var s in v.skins)
+                    if (s != null && s.id == skinId) return s.color;
+            return v.bodyColor;
+        }
+
+        /// <summary>Buys a skin with coins (useGems: false) or gems (useGems: true). Returns false if already owned or insufficient balance.</summary>
+        public bool TryBuySkin(VehicleDef v, VehicleSkinDef skin, bool useGems)
+        {
+            if (v == null || skin == null || OwnsSkin(v.id, skin.id)) return false;
+            bool spent = useGems ? TrySpendGems(skin.gemPrice) : TrySpendCoins(skin.price);
+            if (!spent) return false;
+            Data.ownedSkinKeys.Add(SkinKey(v.id, skin.id));
+            Save();
+            Changed?.Invoke();
+            return true;
+        }
+
+        public void SelectSkin(string vehicleId, string skinId)
+        {
+            if (!OwnsSkin(vehicleId, skinId)) return;
+            for (int i = 0; i < Data.equippedSkins.Count; i++)
+            {
+                if (Data.equippedSkins[i].vehicleId == vehicleId)
+                {
+                    Data.equippedSkins[i].skinId = skinId;
+                    Save();
+                    Changed?.Invoke();
+                    return;
+                }
+            }
+            Data.equippedSkins.Add(new EquippedSkinState { vehicleId = vehicleId, skinId = skinId });
             Save();
             Changed?.Invoke();
         }

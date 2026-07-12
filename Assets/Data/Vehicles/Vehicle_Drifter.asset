@@ -12,13 +12,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9edc3080a4883384b93b22770b4843da, type: 3}
   m_Name: Vehicle_Drifter
   m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.VehicleDef
-  id: drifter
-  displayName: Drifter
+  id: kaido_s13
+  displayName: Kaido S13 Zenki
   price: 0
   gemPrice: 0
   ownedByDefault: 1
   bodyColor: {r: 0.16, g: 0.7, b: 0.9, a: 1}
   prefab: {fileID: 6263950151519020536, guid: 2f1a654347479d24eb44bcca3bc18d78, type: 3}
-  specSpeed: 50
-  specHandling: 50
-  specBoost: 50
+  specSpeed: 40
+  specHandling: 46
+  specBoost: 38
+  skins:
+  - id: factory
+    displayName: Factory
+    color: {r: 0.16, g: 0.7, b: 0.9, a: 1}
+    price: 0
+    gemPrice: 0
+    ownedByDefault: 1
+  - id: stealth
+    displayName: Stealth
+    color: {r: 0.07, g: 0.08, b: 0.1, a: 1}
+    price: 150
+    gemPrice: 0
+    ownedByDefault: 0
+  - id: pearl
+    displayName: Pearl
+    color: {r: 0.95, g: 0.95, b: 0.97, a: 1}
+    price: 220
+    gemPrice: 0
+    ownedByDefault: 0
+  - id: rally
+    displayName: Rally
+    color: {r: 0.9, g: 0.13499998, b: 0.29544282, a: 1}
+    price: 320
+    gemPrice: 0
+    ownedByDefault: 0

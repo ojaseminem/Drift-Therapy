@@ -434,13 +434,14 @@ public class GameController : MonoBehaviour
         var sel = GameApp.Instance != null ? GameApp.Instance.Selected : null;
         if (sel == null || player == null) return;
 
+        Color color = GameApp.Instance.GetEquippedColor(sel.id);
         var mpb = new MaterialPropertyBlock();
         foreach (var r in player.GetComponentsInChildren<Renderer>(true))
         {
             if (r == null || r.transform.name != "SunLineGTE") continue;
             r.GetPropertyBlock(mpb);
-            mpb.SetColor("_BaseColor", sel.bodyColor);
-            mpb.SetColor("_Color", sel.bodyColor);
+            mpb.SetColor("_BaseColor", color);
+            mpb.SetColor("_Color", color);
             r.SetPropertyBlock(mpb);
         }
     }

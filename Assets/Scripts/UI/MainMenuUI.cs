@@ -77,7 +77,7 @@ namespace DriftTherapy
             if (sel != null)
             {
                 if (vehicleNameText) vehicleNameText.text = sel.displayName;
-                if (vehicleSwatch) vehicleSwatch.color = sel.bodyColor;
+                if (vehicleSwatch) vehicleSwatch.color = app.GetEquippedColor(sel.id);
             }
         }
 

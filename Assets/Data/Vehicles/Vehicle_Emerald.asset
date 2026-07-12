@@ -12,13 +12,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9edc3080a4883384b93b22770b4843da, type: 3}
   m_Name: Vehicle_Emerald
   m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.VehicleDef
-  id: emerald
-  displayName: Emerald
-  price: 1200
+  id: kaido_c33
+  displayName: Kaido Laurel C33
+  price: 3000
   gemPrice: 0
   ownedByDefault: 0
-  bodyColor: {r: 0.2, g: 0.8, b: 0.45, a: 1}
+  bodyColor: {r: 0.15, g: 0.65, b: 0.35, a: 1}
   prefab: {fileID: 1566860290911273097, guid: f1a87a8e2af46ef4283345b4984dd4d9, type: 3}
-  specSpeed: 45
-  specHandling: 75
+  specSpeed: 54
+  specHandling: 66
   specBoost: 50
+  skins:
+  - id: factory
+    displayName: Factory
+    color: {r: 0.15, g: 0.65, b: 0.35, a: 1}
+    price: 0
+    gemPrice: 0
+    ownedByDefault: 1
+  - id: stealth
+    displayName: Stealth
+    color: {r: 0.07, g: 0.08, b: 0.1, a: 1}
+    price: 360
+    gemPrice: 0
+    ownedByDefault: 0
+  - id: pearl
+    displayName: Pearl
+    color: {r: 0.95, g: 0.95, b: 0.97, a: 1}
+    price: 490
+    gemPrice: 0
+    ownedByDefault: 0
+  - id: rally
+    displayName: Rally
+    color: {r: 0.8388, g: 0.13499998, b: 0.9, a: 1}
+    price: 650
+    gemPrice: 0
+    ownedByDefault: 0

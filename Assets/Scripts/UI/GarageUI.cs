@@ -66,7 +66,12 @@ namespace DriftTherapy
             for (int i = content.childCount - 1; i >= 0; i--)
             {
                 var c = content.GetChild(i);
-                if (c.gameObject != cardTemplate) Destroy(c.gameObject);
+                if (c.gameObject == cardTemplate) continue;
+                // Destroy() is deferred to end-of-frame — detach immediately so a
+                // second Populate() this same frame (e.g. after a purchase confirm)
+                // doesn't still count these in content.childCount below.
+                c.SetParent(null);
+                Destroy(c.gameObject);
             }
 
             var defs = app.Vehicles;
@@ -135,6 +140,7 @@ namespace DriftTherapy
                 di++;
             }
             RefreshStats();
+            if (display != null) display.RefreshTint();
         }
 
         void RefreshStats()
@@ -199,6 +205,59 @@ namespace DriftTherapy
                 action.onClick.RemoveAllListeners();
                 action.onClick.AddListener(() => OnCardAction(v));
             }
+
+            FillSkinSlots(card, v);
+        }
+
+        static readonly Color SkinBorderDefault = new Color(0.16f, 0.19f, 0.25f, 0.98f);
+        static readonly Color SkinBorderEquipped = new Color(0.18f, 0.85f, 0.78f, 1f);
+
+        void FillSkinSlots(Transform card, VehicleDef v)
+        {
+            var skins = v.skins;
+            string equippedId = app.GetEquippedSkinId(v.id);
+            for (int i = 0; i < 4; i++)
+            {
+                var slot = card.Find("Skin" + i);
+                if (slot == null) continue;
+
+                if (skins == null || i >= skins.Length)
+                {
+                    slot.gameObject.SetActive(false);
+                    continue;
+                }
+
+                var skin = skins[i];
+                slot.gameObject.SetActive(true);
+
+                var border = slot.GetComponent<Image>();
+                bool ownedSkin = app.OwnsSkin(v.id, skin.id);
+                bool equippedSkin = ownedSkin && skin.id == equippedId;
+                if (border) border.color = equippedSkin ? SkinBorderEquipped : SkinBorderDefault;
+
+                var swatch = slot.Find("Swatch")?.GetComponent<Image>();
+                if (swatch) swatch.color = skin.color;
+
+                var lockOverlay = slot.Find("Lock");
+                if (lockOverlay != null)
+                {
+                    lockOverlay.gameObject.SetActive(!ownedSkin);
+                    var priceText = lockOverlay.Find("Price")?.GetComponent<TMP_Text>();
+                    if (priceText != null)
+                    {
+                        bool skinUseGems = skin.price <= 0 && skin.gemPrice > 0;
+                        int amount = skinUseGems ? skin.gemPrice : skin.price;
+                        priceText.text = amount.ToString();
+                    }
+                }
+
+                var btn = slot.GetComponent<Button>();
+                if (btn != null)
+                {
+                    btn.onClick.RemoveAllListeners();
+                    btn.onClick.AddListener(() => OnSkinAction(v, skin));
+                }
+            }
         }
 
         /// <summary>Strikethrough via TMP's native rich-text tag when unaffordable — no custom font/shader needed.</summary>
@@ -223,11 +282,32 @@ namespace DriftTherapy
 
             // Only a gem price set -> pay with gems; otherwise default to coins.
             bool useGems = v.price <= 0 && v.gemPrice > 0;
+            int amount = useGems ? v.gemPrice : v.price;
 
-            if (popups == null || purchaseConfirmPopup == null) return;
+            var confirm = OpenPurchasePopup();
+            if (confirm != null) confirm.Show(v.displayName, amount, useGems, () => app.TryBuy(v, useGems), Populate);
+        }
+
+        void OnSkinAction(VehicleDef v, VehicleSkinDef skin)
+        {
+            if (app.OwnsSkin(v.id, skin.id))
+            {
+                app.SelectSkin(v.id, skin.id);
+                return;
+            }
+
+            bool useGems = skin.price <= 0 && skin.gemPrice > 0;
+            int amount = useGems ? skin.gemPrice : skin.price;
+
+            var confirm = OpenPurchasePopup();
+            if (confirm != null) confirm.Show(v.displayName + " – " + skin.displayName, amount, useGems, () => app.TryBuySkin(v, skin, useGems), Populate);
+        }
+
+        PurchaseConfirmPopup OpenPurchasePopup()
+        {
+            if (popups == null || purchaseConfirmPopup == null) return null;
             var popupGo = popups.Open(purchaseConfirmPopup);
-            var confirm = popupGo != null ? popupGo.GetComponent<PurchaseConfirmPopup>() : null;
-            if (confirm != null) confirm.Show(v, useGems, Populate);
+            return popupGo != null ? popupGo.GetComponent<PurchaseConfirmPopup>() : null;
         }
     }
 }

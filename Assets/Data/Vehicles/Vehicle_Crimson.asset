@@ -12,13 +12,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9edc3080a4883384b93b22770b4843da, type: 3}
   m_Name: Vehicle_Crimson
   m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.VehicleDef
-  id: crimson
-  displayName: Crimson
-  price: 500
+  id: kaido_s15
+  displayName: Kaido S15 SpecR
+  price: 2000
   gemPrice: 0
   ownedByDefault: 0
   bodyColor: {r: 0.85, g: 0.2, b: 0.25, a: 1}
   prefab: {fileID: 8580786351462446872, guid: 2a037190cd9b7244bb219bf1c9d52004, type: 3}
-  specSpeed: 70
-  specHandling: 45
-  specBoost: 55
+  specSpeed: 56
+  specHandling: 58
+  specBoost: 54
+  skins:
+  - id: factory
+    displayName: Factory
+    color: {r: 0.85, g: 0.2, b: 0.25, a: 1}
+    price: 0
+    gemPrice: 0
+    ownedByDefault: 1
+  - id: stealth
+    displayName: Stealth
+    color: {r: 0.07, g: 0.08, b: 0.1, a: 1}
+    price: 290
+    gemPrice: 0
+    ownedByDefault: 0
+  - id: pearl
+    displayName: Pearl
+    color: {r: 0.95, g: 0.95, b: 0.97, a: 1}
+    price: 400
+    gemPrice: 0
+    ownedByDefault: 0
+  - id: rally
+    displayName: Rally
+    color: {r: 0.13499998, g: 0.9, b: 0.47395393, a: 1}
+    price: 540
+    gemPrice: 0
+    ownedByDefault: 0

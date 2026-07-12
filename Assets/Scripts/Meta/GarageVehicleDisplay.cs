@@ -29,7 +29,7 @@ namespace DriftTherapy
         public void Show(VehicleDef def)
         {
             if (def == null || def.prefab == null) return;
-            if (currentDef == def) return;
+            if (currentDef == def) { RefreshTint(); return; }
 
             if (currentInstance != null) currentInstance.SetActive(false);
 
@@ -46,20 +46,31 @@ namespace DriftTherapy
             instance.transform.rotation = Quaternion.identity;
             instance.SetActive(true);
 
-            // Re-apply this vehicle's tint (same MaterialPropertyBlock path GameController.ApplyVehicle uses).
-            var mpb = new MaterialPropertyBlock();
-            foreach (var r in instance.GetComponentsInChildren<Renderer>(true))
-            {
-                if (r == null || r.transform.name != "SunLineGTE") continue;
-                r.GetPropertyBlock(mpb);
-                mpb.SetColor("_BaseColor", def.bodyColor);
-                mpb.SetColor("_Color", def.bodyColor);
-                r.SetPropertyBlock(mpb);
-            }
-
             currentInstance = instance;
             currentDef = def;
             manualRotationOverride = 0f;
+            RefreshTint();
+        }
+
+        /// <summary>
+        /// Re-applies the currently-shown vehicle's equipped skin colour (same
+        /// MaterialPropertyBlock path GameController.ApplyVehicle uses). Call this
+        /// after a skin purchase/equip so the turntable updates without needing to
+        /// re-spawn the car.
+        /// </summary>
+        public void RefreshTint()
+        {
+            if (currentInstance == null || currentDef == null) return;
+            Color color = GameApp.Instance != null ? GameApp.Instance.GetEquippedColor(currentDef.id) : currentDef.bodyColor;
+            var mpb = new MaterialPropertyBlock();
+            foreach (var r in currentInstance.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r == null || r.transform.name != "SunLineGTE") continue;
+                r.GetPropertyBlock(mpb);
+                mpb.SetColor("_BaseColor", color);
+                mpb.SetColor("_Color", color);
+                r.SetPropertyBlock(mpb);
+            }
         }
 
         /// <summary>Rotates the currently-shown car around Y by a drag delta (screen pixels).</summary>

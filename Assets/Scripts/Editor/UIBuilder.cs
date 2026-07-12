@@ -561,6 +561,10 @@ namespace DriftTherapy.EditorTools
             GarageSpecBar(card.transform, "HandlingBar", "HANDLING", 1);
             GarageSpecBar(card.transform, "BoostBar", "BOOST", 2);
 
+            var skinsLabel = Txt(card.transform, "SkinsLabel", "SKINS", 22, Dim, TextAlignmentOptions.Left);
+            Box(skinsLabel.rectTransform, new Vector2(0, 1), new Vector2(300, 34), new Vector2(40, -265));
+            for (int i = 0; i < GarageSkinSlots; i++) GarageSkinSlot(card.transform, i);
+
             var coinsPrice = Txt(card.transform, "CoinsPrice", "0", 34, Coin, TextAlignmentOptions.Left);
             Box(coinsPrice.rectTransform, new Vector2(0, 0), new Vector2(240, 50), new Vector2(40, 90));
             var gemsPrice = Txt(card.transform, "GemsPrice", "0", 34, Gem, TextAlignmentOptions.Left);
@@ -581,11 +585,41 @@ namespace DriftTherapy.EditorTools
             Box((RectTransform)bar.parent, new Vector2(0, 1), new Vector2(760, 20), new Vector2(260, y - 6));
         }
 
+        const int GarageSkinSlots = 4;
+        const float GarageSkinSlotSize = 170f;
+        const float GarageSkinSlotGap = 30f;
+
+        /// <summary>
+        /// One skin swatch slot: a tintable "Swatch" child (set at runtime to the
+        /// skin's colour) plus a "Lock" overlay (dark scrim + price text) shown
+        /// when unowned. GarageUI.FillCard finds these by name ("Skin0".."SkinN-1").
+        /// </summary>
+        static void GarageSkinSlot(Transform card, int index)
+        {
+            float rowWidth = GarageSkinSlots * GarageSkinSlotSize + (GarageSkinSlots - 1) * GarageSkinSlotGap;
+            float startX = (GarageCardWidth - rowWidth) * 0.5f;
+            float x = startX + index * (GarageSkinSlotSize + GarageSkinSlotGap);
+
+            var border = Img(card, "Skin" + index, Panel);
+            Box((RectTransform)border.transform, new Vector2(0, 1), new Vector2(GarageSkinSlotSize, GarageSkinSlotSize), new Vector2(x, -300));
+            var btn = border.gameObject.AddComponent<Button>(); btn.targetGraphic = border;
+
+            var swatch = Img(border.transform, "Swatch", White);
+            swatch.raycastTarget = false;
+            Box((RectTransform)swatch.transform, new Vector2(0.5f, 0.5f), new Vector2(GarageSkinSlotSize - 16f, GarageSkinSlotSize - 16f), Vector2.zero);
+
+            var lockOverlay = Img(border.transform, "Lock", new Color(0f, 0f, 0f, 0.6f));
+            lockOverlay.raycastTarget = false;
+            Stretch((RectTransform)lockOverlay.transform);
+            var priceText = Txt(lockOverlay.transform, "Price", "0", 22, White);
+            Stretch(priceText.rectTransform);
+        }
+
         static GameObject BuildPurchaseConfirmPopup()
         {
             var (rt, cardRt, _) = PopupRoot("PurchaseConfirmPopup", 90, 600);
             var pc = rt.gameObject.AddComponent<PurchaseConfirmPopup>();
-            var t = Txt(cardRt, "Title", "BUY VEHICLE?", 50, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(600, 80), new Vector2(0, -30));
+            var t = Txt(cardRt, "Title", "CONFIRM PURCHASE?", 50, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(600, 80), new Vector2(0, -30));
             pc.closeButton = Btn(cardRt, "Close", "X", Accent2, Ink, 40); Box((RectTransform)pc.closeButton.transform, new Vector2(1, 1), new Vector2(80, 80), new Vector2(-20, -20));
 
             pc.nameText = Txt(cardRt, "Name", "Vehicle", 40, White); Box(pc.nameText.rectTransform, new Vector2(0.5f, 1), new Vector2(500, 60), new Vector2(0, -140));
