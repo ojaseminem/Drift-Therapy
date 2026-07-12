@@ -476,6 +476,8 @@ namespace DriftTherapy.EditorTools
 
         // ── Garage ───────────────────────────────────────────────────────────
         const float GarageCardWidth = 1080f;
+        const float GarageArrowSize = 84f;
+        const float GarageArrowInset = 110f;
 
         static void BuildGarage()
         {
@@ -503,10 +505,12 @@ namespace DriftTherapy.EditorTools
             dragRt.offsetMin = Vector2.zero; dragRt.offsetMax = Vector2.zero;
             ui.dragCatcher = dragCatcherImg.gameObject.AddComponent<GarageDragCatcher>();
 
-            // carousel band (lower ~35% of the screen)
+            // carousel band (lower ~35% of the screen) — inset left/right to leave
+            // room for the prev/next arrow buttons flanking it, so the card itself
+            // renders entirely between the two arrows.
             var carouselArea = RT(canvas, "CarouselArea");
             carouselArea.anchorMin = new Vector2(0, 0.03f); carouselArea.anchorMax = new Vector2(1, 0.38f);
-            carouselArea.offsetMin = Vector2.zero; carouselArea.offsetMax = Vector2.zero;
+            carouselArea.offsetMin = new Vector2(GarageArrowInset, 0f); carouselArea.offsetMax = new Vector2(-GarageArrowInset, 0f);
 
             var viewportImg = Img(carouselArea, "Viewport", new Color(0, 0, 0, 0));
             var viewportRt = (RectTransform)viewportImg.transform; Stretch(viewportRt);
@@ -537,6 +541,9 @@ namespace DriftTherapy.EditorTools
 
             ui.content = contentRt;
             ui.cardTemplate = BuildGarageCard(contentRt);
+
+            ui.leftArrow = GarageArrowButton(canvas, isLeft: true);
+            ui.rightArrow = GarageArrowButton(canvas, isLeft: false);
 
             // purchase confirmation — its own PopupHandler under the raw canvas
             // (Garage is a separate scene from Menu, can't share PopupHandlers).
@@ -581,38 +588,65 @@ namespace DriftTherapy.EditorTools
             float y = -110 - row * 50;
             var lbl = Txt(card, name + "Label", label, 22, Dim, TextAlignmentOptions.Left);
             Box(lbl.rectTransform, new Vector2(0, 1), new Vector2(200, 34), new Vector2(40, y));
+
+            // Stretched (not a fixed 760px width) so it scales to whatever the
+            // card's actual runtime width ends up being — see GarageUI.Populate(),
+            // which resizes the card to the real viewport width, now narrower
+            // since the arrow buttons inset the carousel.
             var bar = Bar(card, name, Dark, Accent);
-            Box((RectTransform)bar.parent, new Vector2(0, 1), new Vector2(760, 20), new Vector2(260, y - 6));
+            var barRt = (RectTransform)bar.parent;
+            barRt.anchorMin = new Vector2(0, 1); barRt.anchorMax = new Vector2(1, 1);
+            barRt.offsetMin = new Vector2(260, y - 26);
+            barRt.offsetMax = new Vector2(-40, y - 6);
         }
 
         const int GarageSkinSlots = 4;
         const float GarageSkinSlotSize = 170f;
-        const float GarageSkinSlotGap = 30f;
+        const float GarageSkinRowTop = -300f;
 
         /// <summary>
         /// One skin swatch slot: a tintable "Swatch" child (set at runtime to the
         /// skin's colour) plus a "Lock" overlay (dark scrim + price text) shown
         /// when unowned. GarageUI.FillCard finds these by name ("Skin0".."SkinN-1").
+        /// Anchored as an even fraction of the card's width (not a fixed pixel
+        /// position) so it scales correctly to the card's actual runtime width —
+        /// see GarageSpecBar's comment for why that varies.
         /// </summary>
         static void GarageSkinSlot(Transform card, int index)
         {
-            float rowWidth = GarageSkinSlots * GarageSkinSlotSize + (GarageSkinSlots - 1) * GarageSkinSlotGap;
-            float startX = (GarageCardWidth - rowWidth) * 0.5f;
-            float x = startX + index * (GarageSkinSlotSize + GarageSkinSlotGap);
+            float fracMin = index / (float)GarageSkinSlots;
+            float fracMax = (index + 1) / (float)GarageSkinSlots;
 
             var border = Img(card, "Skin" + index, Panel);
-            Box((RectTransform)border.transform, new Vector2(0, 1), new Vector2(GarageSkinSlotSize, GarageSkinSlotSize), new Vector2(x, -300));
+            var rt = (RectTransform)border.transform;
+            rt.anchorMin = new Vector2(fracMin, 1); rt.anchorMax = new Vector2(fracMax, 1);
+            rt.offsetMin = new Vector2(16f, GarageSkinRowTop - GarageSkinSlotSize);
+            rt.offsetMax = new Vector2(-16f, GarageSkinRowTop);
             var btn = border.gameObject.AddComponent<Button>(); btn.targetGraphic = border;
 
             var swatch = Img(border.transform, "Swatch", White);
             swatch.raycastTarget = false;
-            Box((RectTransform)swatch.transform, new Vector2(0.5f, 0.5f), new Vector2(GarageSkinSlotSize - 16f, GarageSkinSlotSize - 16f), Vector2.zero);
+            Stretch((RectTransform)swatch.transform, 8f, 8f, 8f, 8f);
 
             var lockOverlay = Img(border.transform, "Lock", new Color(0f, 0f, 0f, 0.6f));
             lockOverlay.raycastTarget = false;
             Stretch((RectTransform)lockOverlay.transform);
             var priceText = Txt(lockOverlay.transform, "Price", "0", 22, White);
             Stretch(priceText.rectTransform);
+        }
+
+        /// <summary>
+        /// Prev/next carousel button flanking the card band, vertically centered
+        /// on it (the carousel band spans y 0.03..0.38, so 0.205 is its midpoint).
+        /// </summary>
+        static Button GarageArrowButton(Transform canvas, bool isLeft)
+        {
+            var btn = Btn(canvas, isLeft ? "ArrowLeft" : "ArrowRight", isLeft ? "<" : ">", Panel, White, 52);
+            var rt = (RectTransform)btn.transform;
+            Vector2 anchor = new Vector2(isLeft ? 0f : 1f, 0.205f);
+            Vector2 offset = new Vector2(isLeft ? GarageArrowSize * 0.5f + 20f : -(GarageArrowSize * 0.5f + 20f), 0f);
+            Box(rt, anchor, new Vector2(GarageArrowSize, GarageArrowSize), offset);
+            return btn;
         }
 
         static GameObject BuildPurchaseConfirmPopup()

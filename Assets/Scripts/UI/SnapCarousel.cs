@@ -17,7 +17,7 @@ namespace DriftTherapy
     {
         [SerializeField] ScrollRect scrollRect;
         [SerializeField] RectTransform content;
-        [SerializeField] float snapDuration = 0.25f;
+        [SerializeField] float snapDuration = 0.38f;
 
         int cardCount = 1;
         float cardWidth;
@@ -65,7 +65,7 @@ namespace DriftTherapy
             DOTween.Kill(content, complete: false);
             if (animate)
             {
-                content.DOAnchorPosX(targetX, snapDuration).SetId(content).SetUpdate(true).SetEase(Ease.OutQuad)
+                content.DOAnchorPosX(targetX, snapDuration).SetId(content).SetUpdate(true).SetEase(Ease.OutCubic)
                     .OnComplete(() => { if (scrollRect != null) scrollRect.enabled = true; });
             }
             else

@@ -20,6 +20,7 @@ namespace DriftTherapy
         public SnapCarousel carousel;
         public Transform content;
         public GameObject cardTemplate;
+        public Button leftArrow, rightArrow;
 
         [Header("3D display / input")]
         [Tooltip("Scene reference (the 3D turntable display) — resolved at runtime via FindFirstObjectByType since this is a UI-only prefab.")]
@@ -42,6 +43,8 @@ namespace DriftTherapy
             if (dragCatcher != null) dragCatcher.display = display;
 
             Bind(homeButton, () => SceneFlow.GoToMenu());
+            Bind(leftArrow, () => { if (carousel != null) carousel.SnapTo(carousel.CurrentIndex - 1); });
+            Bind(rightArrow, () => { if (carousel != null) carousel.SnapTo(carousel.CurrentIndex + 1); });
 
             if (cardTemplate) cardTemplate.SetActive(false);
             if (carousel != null) carousel.IndexChanged += OnIndexChanged;
@@ -163,6 +166,9 @@ namespace DriftTherapy
         void OnIndexChanged(int index)
         {
             var defs = app.Vehicles;
+            if (leftArrow) leftArrow.interactable = index > 0;
+            if (rightArrow) rightArrow.interactable = index < defs.Count - 1;
+
             if (index < 0 || index >= defs.Count || defs[index] == null) return;
             if (display != null) display.Show(defs[index]);
         }
@@ -215,6 +221,7 @@ namespace DriftTherapy
         void FillSkinSlots(Transform card, VehicleDef v)
         {
             var skins = v.skins;
+            bool vehicleOwned = app.Owns(v.id);
             string equippedId = app.GetEquippedSkinId(v.id);
             for (int i = 0; i < 4; i++)
             {
@@ -230,9 +237,12 @@ namespace DriftTherapy
                 var skin = skins[i];
                 slot.gameObject.SetActive(true);
 
-                var border = slot.GetComponent<Image>();
-                bool ownedSkin = app.OwnsSkin(v.id, skin.id);
+                // Skins are locked entirely until the vehicle itself is owned —
+                // no buying paint for a car you don't have yet.
+                bool ownedSkin = vehicleOwned && app.OwnsSkin(v.id, skin.id);
                 bool equippedSkin = ownedSkin && skin.id == equippedId;
+
+                var border = slot.GetComponent<Image>();
                 if (border) border.color = equippedSkin ? SkinBorderEquipped : SkinBorderDefault;
 
                 var swatch = slot.Find("Swatch")?.GetComponent<Image>();
@@ -245,15 +255,23 @@ namespace DriftTherapy
                     var priceText = lockOverlay.Find("Price")?.GetComponent<TMP_Text>();
                     if (priceText != null)
                     {
-                        bool skinUseGems = skin.price <= 0 && skin.gemPrice > 0;
-                        int amount = skinUseGems ? skin.gemPrice : skin.price;
-                        priceText.text = amount.ToString();
+                        if (!vehicleOwned)
+                        {
+                            priceText.text = "";
+                        }
+                        else
+                        {
+                            bool skinUseGems = skin.price <= 0 && skin.gemPrice > 0;
+                            int amount = skinUseGems ? skin.gemPrice : skin.price;
+                            priceText.text = amount.ToString();
+                        }
                     }
                 }
 
                 var btn = slot.GetComponent<Button>();
                 if (btn != null)
                 {
+                    btn.interactable = vehicleOwned;
                     btn.onClick.RemoveAllListeners();
                     btn.onClick.AddListener(() => OnSkinAction(v, skin));
                 }
@@ -284,12 +302,19 @@ namespace DriftTherapy
             bool useGems = v.price <= 0 && v.gemPrice > 0;
             int amount = useGems ? v.gemPrice : v.price;
 
+            // No onConfirmed re-layout here: app.TryBuy already raises Changed,
+            // which Refresh() (subscribed in Start) picks up in place — a full
+            // Populate() would also re-snap the carousel back to the selected
+            // (not currently-viewed) card.
             var confirm = OpenPurchasePopup();
-            if (confirm != null) confirm.Show(v.displayName, amount, useGems, () => app.TryBuy(v, useGems), Populate);
+            if (confirm != null) confirm.Show(v.displayName, amount, useGems, () => app.TryBuy(v, useGems), null);
         }
 
         void OnSkinAction(VehicleDef v, VehicleSkinDef skin)
         {
+            // Skins are locked until the vehicle itself is owned.
+            if (!app.Owns(v.id)) return;
+
             if (app.OwnsSkin(v.id, skin.id))
             {
                 app.SelectSkin(v.id, skin.id);
@@ -300,7 +325,17 @@ namespace DriftTherapy
             int amount = useGems ? skin.gemPrice : skin.price;
 
             var confirm = OpenPurchasePopup();
-            if (confirm != null) confirm.Show(v.displayName + " – " + skin.displayName, amount, useGems, () => app.TryBuySkin(v, skin, useGems), Populate);
+            if (confirm != null)
+            {
+                confirm.Show(v.displayName + " – " + skin.displayName, amount, useGems, () =>
+                {
+                    // Buying a skin equips it immediately — unlike vehicles, there's
+                    // no "which one to drive" choice, you were already looking at it.
+                    bool bought = app.TryBuySkin(v, skin, useGems);
+                    if (bought) app.SelectSkin(v.id, skin.id);
+                    return bought;
+                }, null);
+            }
         }
 
         PurchaseConfirmPopup OpenPurchasePopup()
