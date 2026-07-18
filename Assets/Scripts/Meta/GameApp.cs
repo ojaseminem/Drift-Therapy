@@ -98,9 +98,13 @@ namespace DriftTherapy
         [Tooltip("All missions/trials/daily-pool entries in the catalog.")]
         [SerializeField] MissionDef[] missions;
 
+        [Tooltip("All purchasable Drift Coins/Gems packs in the shop catalog.")]
+        [SerializeField] CurrencyPackDef[] currencyPacks;
+
         public PlayerData Data { get; private set; }
         public IReadOnlyList<VehicleDef> Vehicles => vehicles;
         public IReadOnlyList<MissionDef> Missions => missions;
+        public IReadOnlyList<CurrencyPackDef> CurrencyPacks => currencyPacks;
 
         /// <summary>Raised whenever wallet / profile / ownership changes.</summary>
         public event Action Changed;
@@ -111,17 +115,19 @@ namespace DriftTherapy
             Instance = this;
             DontDestroyOnLoad(gameObject);
             Load();
-
-            // One-time welcome grant so the garage/economy is usable from the start.
-            if (!Data.welcomed)
-            {
-                Data.welcomed = true;
-                Data.coins += 1500;
-                Data.gems += 20;
-                Save();
-            }
+            GrantWelcomeBonusIfNeeded();
 
             PlatformServices.Init();
+        }
+
+        /// <summary>One-time welcome grant so the garage/economy is usable from the start.</summary>
+        void GrantWelcomeBonusIfNeeded()
+        {
+            if (Data.welcomed) return;
+            Data.welcomed = true;
+            Data.coins += 1500;
+            Data.gems += 20;
+            Save();
         }
 
         // ── Persistence ──────────────────────────────────────────────────────
@@ -140,6 +146,25 @@ namespace DriftTherapy
         {
             PlayerPrefs.SetString(SaveKey, JsonUtility.ToJson(Data));
             PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// Wipes the save file (PlayerPrefs) and, if a GameApp is already loaded
+        /// this session, resets it back to a fresh-install state in place —
+        /// used by the "Drift Therapy/Player Data/Clear Data" editor menu.
+        /// </summary>
+        public static void ClearSavedData()
+        {
+            PlayerPrefs.DeleteKey(SaveKey);
+            PlayerPrefs.Save();
+
+            if (Instance != null)
+            {
+                Instance.Data = new PlayerData();
+                Instance.EnsureDefaults();
+                Instance.GrantWelcomeBonusIfNeeded();
+                Instance.Changed?.Invoke();
+            }
         }
 
         void EnsureDefaults()
@@ -319,6 +344,23 @@ namespace DriftTherapy
             Data.equippedSkins.Add(new EquippedSkinState { vehicleId = vehicleId, skinId = skinId });
             Save();
             Changed?.Invoke();
+        }
+
+        // ── Currency packs (IAP) ─────────────────────────────────────────────
+        public CurrencyPackDef GetCurrencyPack(string productId)
+        {
+            if (currencyPacks == null) return null;
+            foreach (var p in currencyPacks) if (p != null && p.productId == productId) return p;
+            return null;
+        }
+
+        /// <summary>Grants a purchased pack's reward and persists immediately. Called by IAPService.ProcessPurchase.</summary>
+        public void GrantCurrencyPack(CurrencyPackDef pack)
+        {
+            if (pack == null) return;
+            if (pack.currencyType == CurrencyType.Gems) AddGems(pack.amount);
+            else AddCoins(pack.amount);
+            Save();
         }
 
         // ── Wallet ───────────────────────────────────────────────────────────

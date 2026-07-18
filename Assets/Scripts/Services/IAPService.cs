@@ -3,7 +3,7 @@ using UnityEngine.Purchasing;
 
 namespace DriftTherapy
 {
-    /// <summary>Seam for the remove-ads entitlement purchase.</summary>
+    /// <summary>Seam for real-money purchases: the remove-ads entitlement and consumable currency packs.</summary>
     public interface IIAPService
     {
         bool IsInitialized { get; }
@@ -11,13 +11,27 @@ namespace DriftTherapy
         void Init();
         void PurchaseRemoveAds();
         void RestorePurchases();
+
+        /// <summary>Buys the consumable currency pack with this product id (see <see cref="CurrencyPackDef.productId"/>).</summary>
+        void PurchaseCurrencyPack(string productId);
+
+        /// <summary>Real store-localized price string (e.g. "$4.99"), or null/empty if not yet available — callers should fall back to CurrencyPackDef.fallbackPriceText.</summary>
+        string GetLocalizedPrice(string productId);
     }
 
     /// <summary>
     /// Real Unity IAP-backed implementation (com.unity.purchasing is already
     /// installed and configured for Google Play — see
-    /// Assets/Resources/BillingMode.json). Single non-consumable product,
-    /// "remove_ads", defined in code — no separate IAP Catalog asset needed.
+    /// Assets/Resources/BillingMode.json). Registers the "remove_ads"
+    /// non-consumable plus every <see cref="CurrencyPackDef"/> in
+    /// <see cref="GameApp.CurrencyPacks"/> as a consumable product.
+    ///
+    /// Store resolution is automatic and needs no per-platform code here:
+    /// Google Play on Android, the Apple App Store on iOS, and Unity IAP's
+    /// built-in Fake Store (a simulated purchase dialog, no network/store
+    /// account needed) in the Editor and any standalone/desktop build where
+    /// no real store is configured. That Fake Store is what "desktop
+    /// simulates it" means in practice — nothing else to wire up for it.
     ///
     /// Entitlement persists via GameApp.Data.removeAdsOwned. The legacy
     /// SaveService.dt_remove_ads key is not written by this class — see
@@ -40,6 +54,13 @@ namespace DriftTherapy
             var module = StandardPurchasingModule.Instance();
             var builder = ConfigurationBuilder.Instance(module);
             builder.AddProduct(RemoveAdsProductId, ProductType.NonConsumable);
+
+            var packs = GameApp.Instance != null ? GameApp.Instance.CurrencyPacks : null;
+            if (packs != null)
+                foreach (var pack in packs)
+                    if (pack != null && !string.IsNullOrEmpty(pack.productId))
+                        builder.AddProduct(pack.productId, ProductType.Consumable);
+
             UnityPurchasing.Initialize(this, builder);
         }
 
@@ -52,16 +73,38 @@ namespace DriftTherapy
             }
 
             if (RemoveAdsOwned) return;
+            InitiatePurchase(RemoveAdsProductId);
+        }
 
-            var product = storeController.products.WithID(RemoveAdsProductId);
+        public void PurchaseCurrencyPack(string productId)
+        {
+            if (!IsInitialized)
+            {
+                Debug.LogWarning("[IAP] Not initialized yet — call Init() first.");
+                return;
+            }
+
+            InitiatePurchase(productId);
+        }
+
+        void InitiatePurchase(string productId)
+        {
+            var product = storeController.products.WithID(productId);
             if (product != null && product.availableToPurchase)
             {
                 storeController.InitiatePurchase(product);
             }
             else
             {
-                Debug.LogWarning("[IAP] remove_ads product not available to purchase.");
+                Debug.LogWarning("[IAP] Product not available to purchase: " + productId);
             }
+        }
+
+        public string GetLocalizedPrice(string productId)
+        {
+            if (!IsInitialized) return null;
+            var product = storeController.products.WithID(productId);
+            return product != null ? product.metadata.localizedPriceString : null;
         }
 
         /// <summary>
@@ -96,11 +139,26 @@ namespace DriftTherapy
 
         public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs purchaseEvent)
         {
-            if (purchaseEvent.purchasedProduct.definition.id == RemoveAdsProductId)
+            string id = purchaseEvent.purchasedProduct.definition.id;
+
+            if (id == RemoveAdsProductId)
             {
                 GameApp.Instance?.SetRemoveAdsOwned(true);
+                return PurchaseProcessingResult.Complete;
             }
 
+            var pack = GameApp.Instance?.GetCurrencyPack(id);
+            if (pack != null)
+            {
+                GameApp.Instance.GrantCurrencyPack(pack);
+            }
+            else
+            {
+                Debug.LogWarning("[IAP] Purchased unknown product id: " + id);
+            }
+
+            // Consumables are re-purchasable the instant this returns Complete —
+            // that's what actually "consumes" it, no separate confirm call needed.
             return PurchaseProcessingResult.Complete;
         }
 

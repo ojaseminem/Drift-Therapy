@@ -148,6 +148,8 @@ namespace DriftTherapy.EditorTools
             ui.keysText  = Chip(bar.transform, "Keys", Key, new Vector2(0, 0.5f), new Vector2(40, 0));
             ui.gemsText  = Chip(bar.transform, "Gems", Gem, new Vector2(0.34f, 0.5f), Vector2.zero);
             ui.coinsText = Chip(bar.transform, "Coins", Coin, new Vector2(0.66f, 0.5f), Vector2.zero);
+            ui.plusButton = Btn(bar.transform, "Plus", "+", Accent, Ink, 40);
+            Box((RectTransform)ui.plusButton.transform, new Vector2(1, 0.5f), new Vector2(70, 70), new Vector2(-146, 0));
             ui.settingsButton = Btn(bar.transform, "Settings", "SET", Panel, White, 24);
             Box((RectTransform)ui.settingsButton.transform, new Vector2(1, 0.5f), new Vector2(90, 90), new Vector2(-40, 0));
 
@@ -187,7 +189,7 @@ namespace DriftTherapy.EditorTools
             ui.popups = ph.gameObject.AddComponent<PopupHandler>();
             ui.missionsPopup    = BuildMissionsPopup();
             ui.trialsPopup      = BuildTrialsPopup();
-            ui.shopPopup        = BuildStubPopup("SHOP");
+            ui.shopPopup        = BuildCurrencyShopPopup();
             ui.leaderboardPopup = BuildLeaderboardPopup();
             ui.settingsPopup    = BuildSettingsPopup();
             ui.onboardingPopup  = BuildOnboardingPopup();
@@ -207,15 +209,6 @@ namespace DriftTherapy.EditorTools
             return (rt, (RectTransform)card.transform, null);
         }
 
-        static GameObject BuildStubPopup(string title)
-        {
-            var (rt, card, _) = PopupRoot(title + "Popup", 70, 420);
-            var p = rt.gameObject.AddComponent<Popup>();
-            var t = Txt(card, "Title", title, 62, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(600, 90), new Vector2(0, -40));
-            var body = Txt(card, "Body", "Coming soon", 42, Dim, TextAlignmentOptions.Center); Stretch(body.rectTransform, 40, 40, 170, 200);
-            p.closeButton = Btn(card, "Close", "CLOSE", Accent, Ink, 44); Box((RectTransform)p.closeButton.transform, new Vector2(0.5f, 0), new Vector2(420, 120), new Vector2(0, 60));
-            return SavePopup(rt.gameObject, Dir + "/Popups/" + title + "Popup.prefab");
-        }
 
         static GameObject BuildSettingsPopup()
         {
@@ -367,6 +360,41 @@ namespace DriftTherapy.EditorTools
             return row.gameObject;
         }
 
+        static GameObject BuildCurrencyPackRow(Transform content)
+        {
+            var row = Img(content, "RowTemplate", Dark);
+            row.gameObject.AddComponent<CanvasGroup>();
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 130; le.preferredHeight = 130;
+
+            var dot = Img(row.transform, "Dot", Coin);
+            Box((RectTransform)dot.transform, new Vector2(0, 0.5f), new Vector2(64, 64), new Vector2(30, 0));
+
+            var amount = Txt(row.transform, "Amount", "1,000 DRIFT COINS", 30, White, TextAlignmentOptions.Left);
+            Box(amount.rectTransform, new Vector2(0, 0.5f), new Vector2(420, 46), new Vector2(110, 20));
+
+            var bonus = Txt(row.transform, "Bonus", "+10% BONUS", 22, Accent2, TextAlignmentOptions.Left);
+            Box(bonus.rectTransform, new Vector2(0, 0.5f), new Vector2(300, 32), new Vector2(110, -20));
+
+            var action = Btn(row.transform, "Action", "$0.99", Coin, Ink, 30);
+            Box((RectTransform)action.transform, new Vector2(1, 0.5f), new Vector2(220, 90), new Vector2(-24, 0));
+
+            return row.gameObject;
+        }
+
+        static GameObject BuildCurrencyShopPopup()
+        {
+            var (rt, card, _) = PopupRoot("CurrencyShopPopup", 50, 240);
+            var sp = rt.gameObject.AddComponent<CurrencyShopPopup>();
+            var t = Txt(card, "Title", "GET COINS & GEMS", 54, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(700, 90), new Vector2(0, -40));
+            sp.closeButton = Btn(card, "Close", "X", Accent2, Ink, 44); Box((RectTransform)sp.closeButton.transform, new Vector2(1, 1), new Vector2(90, 90), new Vector2(-24, -24));
+
+            var content = RT(card, "Content"); Stretch(content, 30, 30, 150, 40);
+            var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>(); vlg.spacing = 14; vlg.childForceExpandHeight = false; vlg.childControlHeight = false; vlg.childControlWidth = true; vlg.childForceExpandWidth = true;
+            sp.content = content;
+            sp.rowTemplate = BuildCurrencyPackRow(content);
+            return SavePopup(rt.gameObject, Dir + "/Popups/CurrencyShopPopup.prefab");
+        }
+
         // ── Game HUD ─────────────────────────────────────────────────────────
         static void BuildGame()
         {
@@ -492,6 +520,8 @@ namespace DriftTherapy.EditorTools
 
             ui.coinsText = Chip(canvas, "Coins", Coin, new Vector2(1, 1), new Vector2(-40, -50));
             ui.gemsText  = Chip(canvas, "Gems", Gem, new Vector2(1, 1), new Vector2(-40, -140));
+            ui.plusButton = Btn(canvas, "Plus", "+", Accent, Ink, 40);
+            Box((RectTransform)ui.plusButton.transform, new Vector2(1, 1), new Vector2(70, 70), new Vector2(-40, -230));
 
             ui.homeButton = Btn(canvas, "Home", "HOME", Panel, White, 28);
             Box((RectTransform)ui.homeButton.transform, new Vector2(0, 0), new Vector2(220, 90), new Vector2(40, 40));
@@ -550,6 +580,7 @@ namespace DriftTherapy.EditorTools
             var ph = RT(rawCanvas, "PopupHandler"); Stretch(ph);
             ui.popups = ph.gameObject.AddComponent<PopupHandler>();
             ui.purchaseConfirmPopup = BuildPurchaseConfirmPopup();
+            ui.shopPopup = BuildCurrencyShopPopup();
 
             Save(root, Dir + "/GarageUI.prefab");
         }

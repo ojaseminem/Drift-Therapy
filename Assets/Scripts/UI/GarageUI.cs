@@ -27,11 +27,12 @@ namespace DriftTherapy
         public GarageDragCatcher dragCatcher;
 
         [Header("Navigation")]
-        public Button homeButton;
+        public Button homeButton, plusButton;
 
         [Header("Purchase confirmation")]
         public PopupHandler popups;
         public GameObject purchaseConfirmPopup;
+        public GameObject shopPopup;
 
         GameApp app;
         GarageVehicleDisplay display;
@@ -45,6 +46,7 @@ namespace DriftTherapy
             Bind(homeButton, () => SceneFlow.GoToMenu());
             Bind(leftArrow, () => { if (carousel != null) carousel.SnapTo(carousel.CurrentIndex - 1); });
             Bind(rightArrow, () => { if (carousel != null) carousel.SnapTo(carousel.CurrentIndex + 1); });
+            Bind(plusButton, () => { if (popups) popups.Open(shopPopup); });
 
             if (cardTemplate) cardTemplate.SetActive(false);
             if (carousel != null) carousel.IndexChanged += OnIndexChanged;

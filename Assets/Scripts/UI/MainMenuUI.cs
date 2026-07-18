@@ -19,7 +19,7 @@ namespace DriftTherapy
         public Image vehicleSwatch;
 
         [Header("Buttons")]
-        public Button runButton, garageButton, homeButton, missionsButton, trialsButton, shopButton, leaderboardButton, settingsButton;
+        public Button runButton, garageButton, homeButton, missionsButton, trialsButton, shopButton, leaderboardButton, settingsButton, plusButton;
 
         [Header("Popups")]
         public PopupHandler popups;
@@ -39,6 +39,7 @@ namespace DriftTherapy
             Bind(missionsButton, () => { if (popups) popups.Open(missionsPopup); });
             Bind(trialsButton, () => { if (popups) popups.Open(trialsPopup); });
             Bind(shopButton, () => { if (popups) popups.Open(shopPopup); });
+            Bind(plusButton, () => { if (popups) popups.Open(shopPopup); });
             Bind(leaderboardButton, () => { if (popups) popups.Open(leaderboardPopup); });
             Bind(settingsButton, () => { if (popups) popups.Open(settingsPopup); });
             Bind(homeButton, () => { if (popups) popups.Close(); });
