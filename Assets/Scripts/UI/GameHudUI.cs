@@ -1,3 +1,4 @@
+using System.Collections;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -37,6 +38,12 @@ namespace DriftTherapy
         [Tooltip("Count-up time from 0 to the final distance. Keep under 2s.")]
         [SerializeField] float scoreCountDuration = 1.1f;
 
+        [Header("Loading Transition")]
+        [Tooltip("Shown in place of an interstitial when no ad is available/allowed, so Home/Retry always feels like it goes somewhere.")]
+        public GameObject loadingPanel;
+        public TMP_Text loadingText;
+        [SerializeField] float loadingScreenSeconds = 0.7f;
+
         GameController controller;
         int lastCommittedCoinsTotal;
 
@@ -51,9 +58,11 @@ namespace DriftTherapy
             Bind(boostButton, () => { if (controller) controller.ActivateBoost(); });
             Bind(resumeButton, () => GameSignals.RaiseResumeRequested());
             Bind(restartButton, () => GameSignals.RaiseRestartRequested());
-            Bind(retryButton, () => GameSignals.RaiseRestartRequested());
+            // Game-over Retry/Home only (not the pause menu's) go through the
+            // interstitial-or-loading-screen gate — see ProceedWithPossibleAd.
+            Bind(retryButton, () => ProceedWithPossibleAd(() => GameSignals.RaiseRestartRequested()));
             Bind(homeButton, GoHome);
-            Bind(endHomeButton, GoHome);
+            Bind(endHomeButton, () => ProceedWithPossibleAd(GoHome));
 
             GameSignals.ScoreChanged      += OnScore;
             GameSignals.DistanceChanged   += OnDistance;
@@ -292,10 +301,38 @@ namespace DriftTherapy
             }
         }
 
-        // TODO(Ads): Phase 4 interstitial landing spot — show a frequency-capped
-        // PlatformServices.Ads.ShowInterstitial(...) here before SceneFlow.GoToMenu()
-        // once a real ad network is wired. Keep Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md
-        // in sync with this call site.
         void GoHome() { Time.timeScale = 1f; GameSignals.RaiseQuitRequested(); SceneFlow.GoToMenu(); }
+
+        /// <summary>
+        /// Game-over Retry/Home gate: if an interstitial is allowed (past the first-10-run
+        /// grace period) and one is actually loaded, show it and perform <paramref name="proceed"/>
+        /// once it closes; otherwise show a brief loading screen first so the tap always
+        /// feels like it went somewhere, then perform it. Never blocks on a failed/unready ad.
+        /// </summary>
+        void ProceedWithPossibleAd(System.Action proceed)
+        {
+            bool adsUnlocked = GameApp.Instance != null && GameApp.Instance.AdsUnlocked;
+            if (adsUnlocked && PlatformServices.Ads.IsInterstitialReady)
+            {
+                PlatformServices.Ads.ShowInterstitial(proceed);
+            }
+            else
+            {
+                StartCoroutine(LoadingThenProceed(proceed));
+            }
+        }
+
+        IEnumerator LoadingThenProceed(System.Action proceed)
+        {
+            if (loadingPanel) loadingPanel.SetActive(true);
+            if (loadingText) loadingText.rectTransform.DOScale(1.08f, 0.4f).SetLoops(-1, LoopType.Yoyo).SetUpdate(true).SetId(loadingText);
+
+            // Time.timeScale is 0 on the end panel — must wait on unscaled time.
+            yield return new WaitForSecondsRealtime(loadingScreenSeconds);
+
+            if (loadingText) DOTween.Kill(loadingText);
+            if (loadingPanel) loadingPanel.SetActive(false);
+            proceed();
+        }
     }
 }

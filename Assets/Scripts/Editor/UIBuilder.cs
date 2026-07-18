@@ -222,6 +222,7 @@ namespace DriftTherapy.EditorTools
             sp.hapticsButton  = StackBtn(card, "Haptics", "HAPTICS: ON", Panel, White, 2);
             sp.removeAdsButton = StackBtn(card, "RemoveAds", "REMOVE ADS", Coin, Ink, 3);
             sp.restoreButton  = StackBtn(card, "Restore", "RESTORE PURCHASES", Panel, White, 4);
+            sp.resetDataButton = StackBtn(card, "ResetData", "RESET PROGRESS", Accent2, Ink, 5);
 
             sp.versionText = Txt(card, "Version", "v1.0", 24, Dim);
             Box(sp.versionText.rectTransform, new Vector2(0.5f, 0), new Vector2(400, 40), new Vector2(0, 40));
@@ -625,6 +626,17 @@ namespace DriftTherapy.EditorTools
             ui.endHomeButton = Btn(ecard, "EndHome", "HOME", Panel, White, 42);
             ui.endHomeGroup = ui.endHomeButton.gameObject.AddComponent<CanvasGroup>();
             Box((RectTransform)ui.endHomeButton.transform, new Vector2(0.5f, 0), new Vector2(480, 104), new Vector2(0, 54));
+
+            // loading transition — covers the brief gap between tapping Home/Retry on the
+            // end panel and the action actually happening when no interstitial plays.
+            // Built last (highest sibling index under rawCanvas) so it always renders on
+            // top of the end panel above.
+            var loading = Img(rawCanvas, "LoadingPanel", new Color(0.05f, 0.06f, 0.08f, 0.94f));
+            Stretch((RectTransform)loading.transform);
+            ui.loadingPanel = loading.gameObject;
+            ui.loadingText = Txt(loading.transform, "Label", "LOADING...", 48, White);
+            Box(ui.loadingText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(600, 90), Vector2.zero);
+            ui.loadingPanel.SetActive(false);
 
             Save(root, Dir + "/GameUI.prefab");
         }

@@ -99,6 +99,11 @@ namespace DriftTherapy
 
         // ── Play Games achievements (local tracking, mirrors server state) ──
         public List<string> unlockedAchievementIds = new List<string>();
+
+        // ── Ads / lifetime stat counters ─────────────────────────────────────
+        public int totalRunsCompleted;
+        public float lifetimeDistanceMeters;
+        public int totalFenceScreeches;
     }
 
     /// <summary>
@@ -382,6 +387,7 @@ namespace DriftTherapy
             Data.ownedSkinKeys.Add(SkinKey(v.id, skin.id));
             Save();
             Changed?.Invoke();
+            if (Data.ownedSkinKeys.Count >= 5) TryUnlockAchievement(AchievementIds.Fashionista);
             return true;
         }
 
@@ -422,6 +428,7 @@ namespace DriftTherapy
             Data.ownedAttachmentIds.Add(def.id);
             Save();
             Changed?.Invoke();
+            if (Data.ownedAttachmentIds.Count >= 3) TryUnlockAchievement(AchievementIds.Tuner);
             return true;
         }
 
@@ -490,6 +497,7 @@ namespace DriftTherapy
             Data.ownedBoosterIds.Add(def.id);
             Save();
             Changed?.Invoke();
+            if (Data.ownedBoosterIds.Count >= 3) TryUnlockAchievement(AchievementIds.Trailblazer);
             return true;
         }
 
@@ -523,11 +531,23 @@ namespace DriftTherapy
             if (pack.currencyType == CurrencyType.Gems) AddGems(pack.amount);
             else AddCoins(pack.amount);
             Save();
+            TryUnlockAchievement(AchievementIds.FirstPurchase);
         }
 
         // ── Wallet ───────────────────────────────────────────────────────────
-        public void AddCoins(int amount) { Data.coins = Mathf.Max(0, Data.coins + amount); Changed?.Invoke(); }
-        public void AddGems(int amount)  { Data.gems  = Mathf.Max(0, Data.gems  + amount); Changed?.Invoke(); }
+        public void AddCoins(int amount)
+        {
+            Data.coins = Mathf.Max(0, Data.coins + amount);
+            Changed?.Invoke();
+            if (Data.coins >= 10000) TryUnlockAchievement(AchievementIds.CoinBaron);
+        }
+
+        public void AddGems(int amount)
+        {
+            Data.gems = Mathf.Max(0, Data.gems + amount);
+            Changed?.Invoke();
+            if (Data.gems >= 100) TryUnlockAchievement(AchievementIds.GemHunter);
+        }
         public void AddKeys(int amount)  { Data.keys  = Mathf.Max(0, Data.keys  + amount); Changed?.Invoke(); }
 
         public bool TrySpendCoins(int amount)
@@ -567,7 +587,11 @@ namespace DriftTherapy
             Data.removeAdsOwned = owned;
             Save();
             Changed?.Invoke();
-            if (owned) TryUnlockAchievement(AchievementIds.Supporter);
+            if (owned)
+            {
+                TryUnlockAchievement(AchievementIds.Supporter);
+                TryUnlockAchievement(AchievementIds.FirstPurchase);
+            }
         }
 
         // ── Achievements ─────────────────────────────────────────────────────
@@ -602,6 +626,19 @@ namespace DriftTherapy
         /// <summary>Most recent finished run (for the end screen).</summary>
         public RunResult LastRun { get; private set; }
 
+        // ── Ads ──────────────────────────────────────────────────────────────
+        /// <summary>Ad-free grace period: no interstitial/rewarded is ever shown for a
+        /// player's first 10 completed runs.</summary>
+        public bool AdsUnlocked => Data.totalRunsCompleted > 10;
+
+        /// <summary>Records a fence scrape (not a crash) toward the Wall Hugger achievement.</summary>
+        public void IncrementFenceScreech()
+        {
+            Data.totalFenceScreeches++;
+            Save();
+            if (Data.totalFenceScreeches >= 10) TryUnlockAchievement(AchievementIds.WallHugger);
+        }
+
         /// <summary>Apply the results of a finished run, store the summary, and persist.</summary>
         public void SubmitRun(float distanceMeters, int coinsEarned, int xpEarned)
         {
@@ -615,7 +652,21 @@ namespace DriftTherapy
             Data.highScore = Mathf.Max(Data.highScore, Mathf.RoundToInt(Data.bestDistanceMeters));
             AddCoins(coinsEarned);
             AddXp(xpEarned);
+
+            Data.totalRunsCompleted++;
+            Data.lifetimeDistanceMeters += Mathf.Max(0f, distanceMeters);
             Save();
+
+            TryUnlockAchievement(AchievementIds.FirstDrift);
+            if (distanceMeters >= 2000f) TryUnlockAchievement(AchievementIds.SpeedDemon);
+            if (distanceMeters >= 5000f) TryUnlockAchievement(AchievementIds.EndlessHorizon);
+            if (Data.lifetimeDistanceMeters >= 1000f) TryUnlockAchievement(AchievementIds.FirstMile);
+            if (Data.lifetimeDistanceMeters >= 50000f) TryUnlockAchievement(AchievementIds.Marathoner);
+            if (Data.lifetimeDistanceMeters >= 100000f) TryUnlockAchievement(AchievementIds.RoadLegend);
+            if (Data.totalRunsCompleted >= 200) TryUnlockAchievement(AchievementIds.VeteranDrifter);
+            if (Data.loginStreak >= 7) TryUnlockAchievement(AchievementIds.DailyDevotee);
+            if (Data.loginStreak >= 30) TryUnlockAchievement(AchievementIds.StreakMaster);
+
             LastRun = new RunResult
             {
                 distanceMeters = distanceMeters,

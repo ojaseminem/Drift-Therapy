@@ -984,8 +984,8 @@ PlayerSettings:
   cloudProjectId: 19de25a1-001a-4ae0-bfbc-9ea5b0383213
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: GameDev - Drift Therapy
-  organizationId: ojaseminem
+  projectName: Drift Therapy
+  organizationId: turtle-game-works-as-publisher
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 1
   hmiLoadingImage: {fileID: 0}

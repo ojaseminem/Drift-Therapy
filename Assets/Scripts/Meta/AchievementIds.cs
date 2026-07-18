@@ -24,5 +24,33 @@ namespace DriftTherapy
         public const string GarageCollector = "achievement_garage_collector";   // own 5+ vehicles
         public const string FullHouse = "achievement_full_house";               // own every vehicle in the catalog
         public const string Supporter = "achievement_supporter";                // purchased Remove Ads
+
+        // Distance milestones (lifetime)
+        public const string FirstMile = "achievement_first_mile";               // 1,000m lifetime
+        public const string Marathoner = "achievement_marathoner";              // 50,000m lifetime
+        public const string RoadLegend = "achievement_road_legend";             // 100,000m lifetime
+        public const string EndlessHorizon = "achievement_endless_horizon";     // 5,000m in a single run
+
+        // Skill (single run)
+        public const string DriftKing = "achievement_drift_king";              // 20x combo in a single run
+        public const string Daredevil = "achievement_daredevil";               // 10 near misses in a single run
+
+        // Currency (balance held at once)
+        public const string CoinBaron = "achievement_coin_baron";               // hold 10,000 coins at once
+        public const string GemHunter = "achievement_gem_hunter";               // hold 100 gems at once
+
+        // Dedication
+        public const string VeteranDrifter = "achievement_veteran_drifter";     // 200 runs lifetime
+        public const string DailyDevotee = "achievement_daily_devotee";         // 7-day login streak
+        public const string StreakMaster = "achievement_streak_master";        // 30-day login streak
+
+        // Collection
+        public const string Fashionista = "achievement_fashionista";           // own 5 vehicle skins total
+        public const string Tuner = "achievement_tuner";                       // own 3 cosmetic attachments
+        public const string Trailblazer = "achievement_trailblazer";           // own 3 booster skins
+
+        // Monetization / misc
+        public const string FirstPurchase = "achievement_first_purchase";      // first real-money purchase
+        public const string WallHugger = "achievement_wall_hugger";            // 10 lifetime fence screeches (no crash)
     }
 }

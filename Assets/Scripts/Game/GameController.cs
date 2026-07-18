@@ -59,6 +59,8 @@ public class GameController : MonoBehaviour
     float driftCoinsPendingRaw;
     float driftTrailInactiveTime;
     float boostFill;
+    int peakComboThisRun;
+    int nearMissCountThisRun;
     public float BoostFill01 => boostFill;
     public int DriftCoinsTotal => driftCoinsTotal;
 
@@ -270,6 +272,7 @@ public class GameController : MonoBehaviour
             if (trailFxActive)
             {
                 score.BuildDriftCombo(delta);
+                peakComboThisRun = Mathf.Max(peakComboThisRun, score.ComboCount);
                 driftCoinsPendingRaw += delta * driftCoinRate;
                 driftTrailInactiveTime = 0f;
                 boostFill = Mathf.Min(1f, boostFill + delta * boostFillPerDriftMetre);
@@ -333,11 +336,22 @@ public class GameController : MonoBehaviour
 
     void HandleReviveRequested()
     {
-        // TODO(Ads): gate this behind PlatformServices.Ads.ShowRewarded(...) once a
-        // real ad network is wired (Phase 4). StubAdsService currently
-        // auto-grants so today's free-revive behavior is unchanged. Keep
-        // Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md in sync with this call site.
+        if (!runState.CanRevive) return;
 
+        // Ad-free grace period (first 10 runs) and no ad ready both fall through to a
+        // free revive — a failed/unavailable ad must never strand the player mid-offer.
+        bool gateBehindAd = GameApp.Instance != null && GameApp.Instance.AdsUnlocked && PlatformServices.Ads.IsRewardedReady;
+        if (!gateBehindAd)
+        {
+            DoRevive();
+            return;
+        }
+
+        PlatformServices.Ads.ShowRewarded(onRewarded: DoRevive, onFailed: DoRevive);
+    }
+
+    void DoRevive()
+    {
         // Revive() only succeeds from Failed with revives remaining.
         if (!runState.Revive())
         {
@@ -434,8 +448,13 @@ public class GameController : MonoBehaviour
             LeaderboardProvider.Current.Submit(finalDistance, GameApp.Instance.Data.selectedVehicleId);
             PlatformServices.PlayGames.SubmitScore("top_runs", Mathf.RoundToInt(finalDistance));
 
-            GameApp.Instance.TryUnlockAchievement(AchievementIds.FirstDrift);
-            if (finalDistance >= 2000f) GameApp.Instance.TryUnlockAchievement(AchievementIds.SpeedDemon);
+            // Per-run trial missions — peak values reached during this run only.
+            GameApp.Instance.ReportRunTrialPeak(MissionMetric.DistanceMeters, final);
+            GameApp.Instance.ReportRunTrialPeak(MissionMetric.DriftCombo, peakComboThisRun);
+            GameApp.Instance.ReportRunTrialPeak(MissionMetric.NearMisses, nearMissCountThisRun);
+
+            if (peakComboThisRun >= 20) GameApp.Instance.TryUnlockAchievement(AchievementIds.DriftKing);
+            if (nearMissCountThisRun >= 10) GameApp.Instance.TryUnlockAchievement(AchievementIds.Daredevil);
         }
         else if (finalDistance > bestDistanceMeters)
         {
@@ -516,6 +535,7 @@ public class GameController : MonoBehaviour
     {
         if (runState.CurrentState != RunState.Running) return;
         if (fenceSparkEffect != null) fenceSparkEffect.PlayAt(contactPoint, contactNormal);
+        if (GameApp.Instance != null) GameApp.Instance.IncrementFenceScreech();
     }
 
     void HandleFenceCrashed(Vector3 contactPoint)
@@ -585,6 +605,8 @@ public class GameController : MonoBehaviour
         driftCoinsPendingRaw = 0f;
         driftTrailInactiveTime = 0f;
         boostFill = 0f;
+        peakComboThisRun = 0;
+        nearMissCountThisRun = 0;
         GameSignals.RaiseDriftCoinsChanged(0, 0);
         GameSignals.RaiseBoostChanged(0f);
     }
@@ -597,6 +619,7 @@ public class GameController : MonoBehaviour
         }
 
         score.RegisterNearMiss(Time.time);
+        nearMissCountThisRun++;
         boostFill = Mathf.Min(1f, boostFill + boostFillPerNearMiss);
         GameSignals.RaiseBoostChanged(boostFill);
         driftCoinsTotal += nearMissDriftCoins;
