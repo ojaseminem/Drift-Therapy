@@ -45,6 +45,7 @@ namespace DriftTherapy
             instance.transform.position = turntablePoint != null ? turntablePoint.position : Vector3.zero;
             instance.transform.rotation = Quaternion.identity;
             instance.SetActive(true);
+            UiJuice.PopIn(instance.transform, 0.35f);
 
             currentInstance = instance;
             currentDef = def;

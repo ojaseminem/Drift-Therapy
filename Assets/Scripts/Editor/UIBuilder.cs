@@ -514,21 +514,14 @@ namespace DriftTherapy.EditorTools
             // No Bg image — this is a real 3D scene (Garage.unity); the turntable
             // car renders directly behind this transparent-background canvas.
 
-            // top bar: level + currencies + home
-            ui.levelText = Txt(canvas, "Level", "GARAGE LVL 1", 34, White, TextAlignmentOptions.Left);
-            Box(ui.levelText.rectTransform, new Vector2(0, 1), new Vector2(420, 60), new Vector2(40, -50));
-
-            ui.coinsText = Chip(canvas, "Coins", Coin, new Vector2(1, 1), new Vector2(-40, -50));
-            ui.gemsText  = Chip(canvas, "Gems", Gem, new Vector2(1, 1), new Vector2(-40, -140));
-            ui.plusButton = Btn(canvas, "Plus", "+", Accent, Ink, 40);
-            Box((RectTransform)ui.plusButton.transform, new Vector2(1, 1), new Vector2(70, 70), new Vector2(-40, -230));
-
-            ui.homeButton = Btn(canvas, "Home", "HOME", Panel, White, 28);
-            Box((RectTransform)ui.homeButton.transform, new Vector2(0, 0), new Vector2(220, 90), new Vector2(40, 40));
-
             // drag-catcher over the 3D viewport region (upper ~60% of the screen) —
             // invisible (alpha 0) but still raycastable, spatially separate from the
             // carousel band below so the two drag gestures never conflict.
+            //
+            // Built BEFORE the top bar (below) so the top bar — which overlaps the
+            // carousel band in its bottom-left corner (Home button) — always ends up
+            // as later siblings and wins both paint order and raycast hit-testing.
+            // Sibling order (not literal Z) is what "on top" means for Unity UI.
             var dragCatcherImg = Img(canvas, "DragCatcher", new Color(0, 0, 0, 0));
             var dragRt = (RectTransform)dragCatcherImg.transform;
             dragRt.anchorMin = new Vector2(0, 0.42f); dragRt.anchorMax = new Vector2(1, 1);
@@ -545,6 +538,10 @@ namespace DriftTherapy.EditorTools
             var viewportImg = Img(carouselArea, "Viewport", new Color(0, 0, 0, 0));
             var viewportRt = (RectTransform)viewportImg.transform; Stretch(viewportRt);
             viewportImg.gameObject.AddComponent<RectMask2D>();
+            // Purely a mask container — the card Images underneath remain raycast
+            // targets and bubble drag events up to the ScrollRect on carouselArea,
+            // so this doesn't need to (and shouldn't) eat raycasts itself.
+            viewportImg.raycastTarget = false;
 
             // Cards are positioned manually by GarageUI.Populate() (anchoredPosition =
             // index * runtime viewport width), not via a HorizontalLayoutGroup —
@@ -574,6 +571,21 @@ namespace DriftTherapy.EditorTools
 
             ui.leftArrow = GarageArrowButton(canvas, isLeft: true);
             ui.rightArrow = GarageArrowButton(canvas, isLeft: false);
+
+            // top bar: level + currencies + home. Built AFTER the carousel/drag-catcher
+            // above so these always render on top and receive raycasts first — Home's
+            // rect (bottom-left) geometrically overlaps the carousel band, and later
+            // siblings win both paint order and hit-testing in Unity UI.
+            ui.levelText = Txt(canvas, "Level", "GARAGE LVL 1", 34, White, TextAlignmentOptions.Left);
+            Box(ui.levelText.rectTransform, new Vector2(0, 1), new Vector2(420, 60), new Vector2(40, -50));
+
+            ui.coinsText = Chip(canvas, "Coins", Coin, new Vector2(1, 1), new Vector2(-40, -50));
+            ui.gemsText  = Chip(canvas, "Gems", Gem, new Vector2(1, 1), new Vector2(-40, -140));
+            ui.plusButton = Btn(canvas, "Plus", "+", Accent, Ink, 40);
+            Box((RectTransform)ui.plusButton.transform, new Vector2(1, 1), new Vector2(70, 70), new Vector2(-40, -230));
+
+            ui.homeButton = Btn(canvas, "Home", "HOME", Panel, White, 28);
+            Box((RectTransform)ui.homeButton.transform, new Vector2(0, 0), new Vector2(220, 90), new Vector2(40, 40));
 
             // purchase confirmation — its own PopupHandler under the raw canvas
             // (Garage is a separate scene from Menu, can't share PopupHandlers).

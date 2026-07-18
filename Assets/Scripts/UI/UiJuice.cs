@@ -54,8 +54,12 @@ namespace DriftTherapy
                 .OnComplete(() => onComplete?.Invoke());
         }
 
-        /// <summary>Scales a RectTransform up from zero with an overshoot-then-settle bounce — a "pop in" landing.</summary>
-        public static void PopIn(RectTransform t, float duration = 0.4f, float restScale = 1f)
+        /// <summary>
+        /// Scales a Transform up from zero with an overshoot-then-settle bounce — a "pop in"
+        /// landing. Takes a plain Transform (not RectTransform) so it also works on 3D scene
+        /// objects (e.g. a garage turntable vehicle), not just UI.
+        /// </summary>
+        public static void PopIn(Transform t, float duration = 0.4f, float restScale = 1f)
         {
             if (t == null) return;
             DOTween.Kill(t, complete: false);

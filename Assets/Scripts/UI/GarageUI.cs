@@ -36,6 +36,7 @@ namespace DriftTherapy
 
         GameApp app;
         GarageVehicleDisplay display;
+        int lastCoins = -1, lastGems = -1;
 
         void Start()
         {
@@ -44,9 +45,9 @@ namespace DriftTherapy
             if (dragCatcher != null) dragCatcher.display = display;
 
             Bind(homeButton, () => SceneFlow.GoToMenu());
-            Bind(leftArrow, () => { if (carousel != null) carousel.SnapTo(carousel.CurrentIndex - 1); });
-            Bind(rightArrow, () => { if (carousel != null) carousel.SnapTo(carousel.CurrentIndex + 1); });
-            Bind(plusButton, () => { if (popups) popups.Open(shopPopup); });
+            Bind(leftArrow, () => { PunchButton(leftArrow); if (carousel != null) carousel.SnapTo(carousel.CurrentIndex - 1); });
+            Bind(rightArrow, () => { PunchButton(rightArrow); if (carousel != null) carousel.SnapTo(carousel.CurrentIndex + 1); });
+            Bind(plusButton, () => { PunchButton(plusButton); if (popups) popups.Open(shopPopup); });
 
             if (cardTemplate) cardTemplate.SetActive(false);
             if (carousel != null) carousel.IndexChanged += OnIndexChanged;
@@ -63,6 +64,7 @@ namespace DriftTherapy
         }
 
         static void Bind(Button b, System.Action a) { if (b) { b.onClick.RemoveAllListeners(); b.onClick.AddListener(() => a()); } }
+        static void PunchButton(Button b) { if (b) UiJuice.PunchScale((RectTransform)b.transform, 0.12f, 0.18f); }
 
         void Populate()
         {
@@ -152,8 +154,17 @@ namespace DriftTherapy
         {
             if (app == null) return;
             if (levelText) levelText.text = "GARAGE LVL " + app.Data.level;
-            if (coinsText) coinsText.text = app.Data.coins.ToString();
-            if (gemsText) gemsText.text = app.Data.gems.ToString();
+            SetOrCount(coinsText, ref lastCoins, app.Data.coins);
+            SetOrCount(gemsText, ref lastGems, app.Data.gems);
+        }
+
+        /// <summary>Snaps on first refresh / on decrease (e.g. a spend); counts up on increase (e.g. a claim reward).</summary>
+        static void SetOrCount(TMP_Text t, ref int last, int value)
+        {
+            if (t == null) { last = value; return; }
+            if (last < 0 || value <= last) t.text = value.ToString();
+            else UiJuice.CountTo(t, last, value, 0.4f);
+            last = value;
         }
 
         int IndexOfSelected()
@@ -211,7 +222,7 @@ namespace DriftTherapy
             {
                 action.interactable = !equipped;
                 action.onClick.RemoveAllListeners();
-                action.onClick.AddListener(() => OnCardAction(v));
+                action.onClick.AddListener(() => { PunchButton(action); OnCardAction(v); });
             }
 
             FillSkinSlots(card, v);
@@ -275,7 +286,7 @@ namespace DriftTherapy
                 {
                     btn.interactable = vehicleOwned;
                     btn.onClick.RemoveAllListeners();
-                    btn.onClick.AddListener(() => OnSkinAction(v, skin));
+                    btn.onClick.AddListener(() => { PunchButton(btn); OnSkinAction(v, skin); });
                 }
             }
         }
@@ -287,9 +298,7 @@ namespace DriftTherapy
         {
             var fill = card.Find(barName + "/Fill")?.GetComponent<RectTransform>();
             if (fill == null) return;
-            var a = fill.anchorMax;
-            a.x = Mathf.Clamp01(value0to100 / 100f);
-            fill.anchorMax = a;
+            UiJuice.FillTo(fill, Mathf.Clamp01(value0to100 / 100f), 0.5f);
         }
 
         void OnCardAction(VehicleDef v)
