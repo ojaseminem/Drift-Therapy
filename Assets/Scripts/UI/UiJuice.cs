@@ -39,15 +39,45 @@ namespace DriftTherapy
         }
 
         /// <summary>Count a TMP label from <paramref name="from"/> to <paramref name="to"/> over <paramref name="duration"/>.</summary>
-        public static void CountTo(TMP_Text label, int from, int to, float duration)
+        public static void CountTo(TMP_Text label, int from, int to, float duration) => CountTo(label, from, to, duration, "");
+
+        /// <summary>Count a TMP label from <paramref name="from"/> to <paramref name="to"/>, appending <paramref name="suffix"/> each tick (e.g. " m").</summary>
+        public static void CountTo(TMP_Text label, int from, int to, float duration, string suffix, System.Action onComplete = null)
         {
             if (label == null) return;
             DOTween.Kill(label, complete: false);
             int current = from;
-            DOTween.To(() => current, v => { current = v; label.text = v.ToString(); }, to, duration)
+            DOTween.To(() => current, v => { current = v; label.text = v + suffix; }, to, duration)
                 .SetId(label)
                 .SetUpdate(true)
-                .SetEase(Ease.OutQuad);
+                .SetEase(Ease.OutQuad)
+                .OnComplete(() => onComplete?.Invoke());
+        }
+
+        /// <summary>Scales a RectTransform up from zero with an overshoot-then-settle bounce — a "pop in" landing.</summary>
+        public static void PopIn(RectTransform t, float duration = 0.4f, float restScale = 1f)
+        {
+            if (t == null) return;
+            DOTween.Kill(t, complete: false);
+            t.localScale = Vector3.zero;
+            t.DOScale(restScale, duration).SetEase(Ease.OutBack).SetId(t).SetUpdate(true);
+        }
+
+        /// <summary>
+        /// A heavy squash-impact-settle beat — for a number/label "landing" with weight
+        /// (e.g. a score count-up hitting its final value), as opposed to <see cref="PopIn"/>'s
+        /// lighter bounce-in. Squashes flat on impact, overshoots back, then eases to rest.
+        /// </summary>
+        public static void HeavyLanding(RectTransform t, float restScale = 1f)
+        {
+            if (t == null) return;
+            DOTween.Kill(t, complete: false);
+            t.localScale = Vector3.one * restScale;
+
+            var seq = DOTween.Sequence().SetId(t).SetUpdate(true);
+            seq.Append(t.DOScale(new Vector3(restScale * 1.28f, restScale * 0.7f, 1f), 0.09f).SetEase(Ease.OutQuad));
+            seq.Append(t.DOScale(new Vector3(restScale * 0.88f, restScale * 1.16f, 1f), 0.11f).SetEase(Ease.OutQuad));
+            seq.Append(t.DOScale(Vector3.one * restScale, 0.22f).SetEase(Ease.OutBack));
         }
 
         /// <summary>

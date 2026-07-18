@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e88bc4aa5f6a8484cb4617ef8ba04ad7, type: 3}
+  m_Name: EnvSet_Snow
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeEnvironmentSet
+  categories:
+  - name: Trees
+    prefabVariants:
+    - {fileID: 657632246826718158, guid: ba57e88ee718eb243887408650f28339, type: 3}
+    - {fileID: 7176418584813835461, guid: 048c5484c6569004fb41be6c2a6766d9, type: 3}
+    minSpacing: 11
+    density: 0.6
+    sideOffsetRange: {x: 5, y: 26}
+    bothSides: 1
+    scaleJitter: {x: 0.8, y: 1.25}
+    yRotationJitterDeg: {x: 0, y: 360}
+    castShadows: 1
+  - name: Rocks
+    prefabVariants:
+    - {fileID: 6360080549933172317, guid: a057b817a99f3c44a98effe04642eb9c, type: 3}
+    - {fileID: 1076360735151192619, guid: b83b191d341f0d6469e6d781d17ab065, type: 3}
+    minSpacing: 16
+    density: 0.3
+    sideOffsetRange: {x: 5, y: 20}
+    bothSides: 1
+    scaleJitter: {x: 0.8, y: 1.4}
+    yRotationJitterDeg: {x: 0, y: 360}
+    castShadows: 0
+  - name: Snowdrifts
+    prefabVariants:
+    - {fileID: 4087915134350241216, guid: 46a3c55bc2eb6144f846d5e913e06c59, type: 3}
+    minSpacing: 10
+    density: 0.4
+    sideOffsetRange: {x: 4, y: 14}
+    bothSides: 1
+    scaleJitter: {x: 0.8, y: 1.3}
+    yRotationJitterDeg: {x: 0, y: 360}
+    castShadows: 0

@@ -15,6 +15,7 @@ MonoBehaviour:
   biomeName: City Outskirts
   startDistance: 0
   transitionLength: 80
+  segmentDuration: 400
   asphaltMaterial: {fileID: 2100000, guid: 439e17907b8a58e4c8cca2af4a9b3539, type: 2}
   kerbMaterial: {fileID: 2100000, guid: 4a304753da9f65e4ca420f69017917e7, type: 2}
   fogColor: {r: 0.55, g: 0.42, b: 0.3, a: 1}
@@ -26,3 +27,4 @@ MonoBehaviour:
   roadWidthMultiplier: 1
   curvatureMultiplier: 0.9
   postProcessProfile: {fileID: 0}
+  environmentSet: {fileID: 11400000, guid: f8f5599a9b9353c47b97888dedbba372, type: 2}

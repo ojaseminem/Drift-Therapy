@@ -33,6 +33,10 @@ namespace DriftTherapy
         public Button retryButton, endHomeButton;
         public CanvasGroup resultBannerGroup, distanceCardGroup, rewardsGroup, retryGroup, endHomeGroup;
 
+        [Header("End Score Animation")]
+        [Tooltip("Count-up time from 0 to the final distance. Keep under 2s.")]
+        [SerializeField] float scoreCountDuration = 1.1f;
+
         GameController controller;
         int lastCommittedCoinsTotal;
 
@@ -99,6 +103,11 @@ namespace DriftTherapy
             GameSignals.RunFailed         -= OnRunFailed;
 
             DOTween.Kill("EndReveal");
+            if (endScore)
+            {
+                DOTween.Kill(endScore, complete: false);
+                DOTween.Kill(endScore.rectTransform, complete: false);
+            }
         }
 
         static void Bind(Button b, System.Action a) { if (b) { b.onClick.RemoveAllListeners(); b.onClick.AddListener(() => a()); } }
@@ -237,13 +246,28 @@ namespace DriftTherapy
             var r = GameApp.Instance != null ? GameApp.Instance.LastRun : default;
             int distanceMeters = Mathf.Max(0, Mathf.FloorToInt(r.distanceMeters));
             int bestDistanceMeters = Mathf.Max(0, Mathf.FloorToInt(r.bestDistanceMeters));
-            if (endScore) endScore.text = distanceMeters + " m";
             if (endBest) endBest.text = "BEST " + bestDistanceMeters + " m";
             if (endNewBest) endNewBest.gameObject.SetActive(r.isNewBest && distanceMeters > 0);
             if (endCoins) endCoins.text = "+" + r.coins;
             if (endXp) endXp.text = "+" + r.xp + " XP";
 
+            PlayScoreCountUp(distanceMeters);
+
             PlayEndReveal();
+        }
+
+        /// <summary>
+        /// Score pops in and counts up from 0 to the final distance (kept under 2s);
+        /// once it lands on the final number it gets a heavy squash-and-settle
+        /// "impact" beat instead of a light bounce, for a weightier finish.
+        /// </summary>
+        void PlayScoreCountUp(int distanceMeters)
+        {
+            if (!endScore) return;
+
+            UiJuice.PopIn(endScore.rectTransform, scoreCountDuration * 0.4f);
+            UiJuice.CountTo(endScore, 0, distanceMeters, scoreCountDuration, " m",
+                () => UiJuice.HeavyLanding(endScore.rectTransform));
         }
 
         /// <summary>

@@ -17,10 +17,13 @@ public class BiomeData : ScriptableObject
     public string biomeName = "Unnamed Biome";
 
     [Header("Trigger")]
-    [Tooltip("Player distance (metres) at which this biome begins to blend in.")]
+    [Tooltip("Player distance (metres) at which this biome begins to blend in. " +
+             "Used directly in fixed-order mode; overwritten at runtime from segmentDuration when shuffled.")]
     public float startDistance = 0f;
     [Tooltip("Metres over which to cross-fade from the previous biome.")]
     public float transitionLength = 80f;
+    [Tooltip("Metres this biome runs for before the next one begins, when RoadBiomeManager shuffles the order per run.")]
+    public float segmentDuration = 400f;
 
     [Header("Road Materials")]
     [Tooltip("Asphalt surface material — slot 0 on road segments.")]
@@ -54,4 +57,8 @@ public class BiomeData : ScriptableObject
     [Header("Post-Processing")]
     [Tooltip("Optional VolumeProfile to blend in during this biome.")]
     public VolumeProfile postProcessProfile;
+
+    [Header("Scenery")]
+    [Tooltip("Scattered props (buildings, trees, rocks, ...) for this mood. Optional — leave null for no scenery.")]
+    public BiomeEnvironmentSet environmentSet;
 }

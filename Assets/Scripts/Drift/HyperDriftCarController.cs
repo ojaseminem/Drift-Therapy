@@ -86,6 +86,8 @@ public class HyperDriftCarController : MonoBehaviour
     /// </summary>
     public bool ControlsEnabled { get; set; } = true;
 
+    public Rigidbody RB => car != null ? car.RB : null;
+
     PG_WheelCollider[] wheelAdapters;
     float[] baseForwardStiffness;
     float[] baseSideStiffness;
@@ -154,6 +156,31 @@ public class HyperDriftCarController : MonoBehaviour
 
         float dynamicThrottle = minThrottle + speedError * throttleGain;
         return Mathf.Clamp(dynamicThrottle, minThrottle, maxThrottle);
+    }
+
+    /// <summary>
+    /// Cuts player control and kicks the rigidbody so the crash plays out physically
+    /// (existing wheel/suspension physics keeps simulating — this only supplies the
+    /// impact force/spin, not a full replacement of the drive model).
+    /// </summary>
+    public void ApplyCrashImpulse(Vector3? impactWorldPos, float impulseForce, float upwardForce, float spinTorque)
+    {
+        ControlsEnabled = false;
+        if (car == null || car.RB == null) return;
+
+        Vector3 awayDir = impactWorldPos.HasValue
+            ? transform.position - impactWorldPos.Value
+            : -transform.forward;
+        awayDir.y = 0f;
+        if (awayDir.sqrMagnitude < 0.01f) awayDir = -transform.forward;
+        awayDir.Normalize();
+
+        Rigidbody rb = car.RB;
+        rb.linearVelocity *= 0.35f;
+        rb.AddForce(awayDir * impulseForce + Vector3.up * upwardForce, ForceMode.VelocityChange);
+
+        Vector3 spinAxis = new Vector3(Random.Range(-1f, 1f), Random.Range(0.5f, 1f), Random.Range(-1f, 1f)).normalized;
+        rb.AddTorque(spinAxis * spinTorque, ForceMode.VelocityChange);
     }
 
     void CacheWheelStiffness()

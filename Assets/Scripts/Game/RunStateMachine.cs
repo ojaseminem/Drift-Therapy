@@ -34,9 +34,24 @@ public class RunStateMachine
         return true;
     }
 
-    public bool FailRun(string reason)
+    /// <summary>
+    /// Enters the crash-watch state: controls are cut and crash physics play out,
+    /// but the run hasn't officially ended yet (see <see cref="FailRun"/>).
+    /// </summary>
+    public bool BeginCrash()
     {
         if (CurrentState != RunState.Running)
+        {
+            return false;
+        }
+
+        TransitionTo(RunState.Crashing);
+        return true;
+    }
+
+    public bool FailRun(string reason)
+    {
+        if (CurrentState != RunState.Running && CurrentState != RunState.Crashing)
         {
             return false;
         }

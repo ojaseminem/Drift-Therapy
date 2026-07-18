@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e88bc4aa5f6a8484cb4617ef8ba04ad7, type: 3}
+  m_Name: EnvSet_Rural
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeEnvironmentSet
+  categories:
+  - name: Trees
+    prefabVariants:
+    - {fileID: 7485080569377924322, guid: 3cb65379564fe8a4eb89357394a4e541, type: 3}
+    - {fileID: 7307673061934694288, guid: abf681655732a8149b18230c2db38573, type: 3}
+    minSpacing: 12
+    density: 0.5
+    sideOffsetRange: {x: 6, y: 24}
+    bothSides: 1
+    scaleJitter: {x: 0.8, y: 1.25}
+    yRotationJitterDeg: {x: 0, y: 360}
+    castShadows: 1
+  - name: Fences
+    prefabVariants:
+    - {fileID: 346262764005311621, guid: 79bf867a5e2b6974f98f760e13642a69, type: 3}
+    minSpacing: 5
+    density: 0.7
+    sideOffsetRange: {x: 4, y: 4.5}
+    bothSides: 1
+    scaleJitter: {x: 1, y: 1}
+    yRotationJitterDeg: {x: 0, y: 0}
+    castShadows: 0
+  - name: Haystacks
+    prefabVariants:
+    - {fileID: 8772970627569797919, guid: 90d5b2b0aec9d0848bce8cffba0fd25a, type: 3}
+    minSpacing: 22
+    density: 0.35
+    sideOffsetRange: {x: 6, y: 20}
+    bothSides: 1
+    scaleJitter: {x: 0.85, y: 1.2}
+    yRotationJitterDeg: {x: 0, y: 360}
+    castShadows: 1

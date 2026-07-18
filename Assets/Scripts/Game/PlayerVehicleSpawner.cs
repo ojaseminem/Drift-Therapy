@@ -26,6 +26,8 @@ namespace DriftTherapy
         [SerializeField] RoadSegmentPool road;
         [SerializeField] TrafficDirector trafficDirector;
         [SerializeField] CollectibleSpawner collectibleSpawner;
+        [Tooltip("Pooled spark VFX prefab for fence screeches. Attached to every spawned vehicle at runtime.")]
+        [SerializeField] GameObject fenceSparkVfxPrefab;
 
         public Transform SpawnedPlayer { get; private set; }
         public HyperDriftCarController SpawnedCarController { get; private set; }
@@ -49,6 +51,16 @@ namespace DriftTherapy
             SpawnedPlayer = instance.transform;
             SpawnedCarController = instance.GetComponent<HyperDriftCarController>();
             SpawnedVehicleHealth = instance.GetComponent<VehicleHealth>();
+
+            // Fence screech/crash detection + its spark VFX — added here rather than
+            // pre-wired on each of the 16 vehicle prefabs, so every vehicle gets it
+            // for free and there's one place to update if the VFX prefab changes.
+            var fenceDetector = instance.GetComponent<FenceCollisionDetector>();
+            if (fenceDetector == null) fenceDetector = instance.AddComponent<FenceCollisionDetector>();
+
+            var fenceSpark = instance.GetComponent<FenceSparkEffect>();
+            if (fenceSpark == null) fenceSpark = instance.AddComponent<FenceSparkEffect>();
+            fenceSpark.SetSparkPrefab(fenceSparkVfxPrefab);
 
             if (gameController != null) gameController.SetPlayer(SpawnedPlayer, SpawnedVehicleHealth, SpawnedCarController);
             if (trafficSensor != null) trafficSensor.SetPlayer(SpawnedPlayer, SpawnedCarController);

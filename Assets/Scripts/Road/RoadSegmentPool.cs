@@ -54,6 +54,17 @@ public class RoadSegmentPool : MonoBehaviour
     [Header("Biome")]
     [SerializeField] RoadBiomeManager biomeManager;
 
+    // Environment hook — assign an EnvironmentPropScatterer to enable scattered scenery
+    [Header("Environment")]
+    [SerializeField] EnvironmentPropScatterer propScatterer;
+
+    [Header("Fence")]
+    [Tooltip("Material for the continuous roadside fence. Leave null to skip fence generation.")]
+    [SerializeField] Material fenceMaterial;
+    [SerializeField] float fenceGap = 0.6f;
+    [SerializeField] float fenceHeight = 1.1f;
+    [SerializeField] float fenceThickness = 0.12f;
+
     // Spline
     SplineRoadBuilder       spline;
     RoadCurveGenerator      curveGen;
@@ -204,6 +215,19 @@ public class RoadSegmentPool : MonoBehaviour
         if (biomeManager)
             biomeManager.RegisterSegmentRenderer(go.GetComponent<Renderer>());
 
+        // ⑤ Scatter biome-specific scenery along this segment
+        if (propScatterer)
+            propScatterer.OnSegmentSpawned(go, samples, origin);
+
+        // ⑥ Rebuild the roadside fence for this segment (child object, same origin)
+        var fenceMesher = go.GetComponentInChildren<RoadFenceMesher>();
+        if (fenceMesher)
+        {
+            fenceMesher.RebuildMesh(samples, origin);
+            var fenceCol = fenceMesher.GetComponent<MeshCollider>();
+            if (fenceCol) fenceCol.sharedMesh = fenceMesher.GetComponent<MeshFilter>().sharedMesh;
+        }
+
         activeSegs.AddLast(new ActiveSeg
         {
             Go     = go,
@@ -234,6 +258,8 @@ public class RoadSegmentPool : MonoBehaviour
 
             if (biomeManager)
                 biomeManager.UnregisterSegmentRenderer(first.Go.GetComponent<Renderer>());
+            if (propScatterer)
+                propScatterer.OnSegmentRecycled(first.Go);
             first.Go.SetActive(false);
             freePool.Enqueue(first.Go);
             activeSegs.RemoveFirst();
@@ -313,6 +339,29 @@ public class RoadSegmentPool : MonoBehaviour
         go.AddComponent<ProceduralRoadMesher>();
         go.AddComponent<MeshCollider>();
 
+        if (fenceMaterial != null)
+        {
+            CreateFenceChild(go);
+        }
+
         return go;
+    }
+
+    void CreateFenceChild(GameObject parent)
+    {
+        var fenceGo = new GameObject("Fence");
+        fenceGo.transform.SetParent(parent.transform, false);
+
+        fenceGo.AddComponent<MeshFilter>();
+        var mr = fenceGo.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = fenceMaterial;
+
+        var mesher = fenceGo.AddComponent<RoadFenceMesher>();
+        mesher.FenceGap = fenceGap;
+        mesher.FenceHeight = fenceHeight;
+        mesher.FenceThickness = fenceThickness;
+
+        fenceGo.AddComponent<MeshCollider>();
+        fenceGo.AddComponent<FenceSurface>();
     }
 }

@@ -15,6 +15,7 @@ MonoBehaviour:
   biomeName: Hills
   startDistance: 1200
   transitionLength: 120
+  segmentDuration: 400
   asphaltMaterial: {fileID: 2100000, guid: c112110844ec1394e82f715735b6bdd7, type: 2}
   kerbMaterial: {fileID: 2100000, guid: 561e1ce6eeb19204a9009610e829406d, type: 2}
   fogColor: {r: 0.4, g: 0.42, b: 0.28, a: 1}
@@ -26,3 +27,4 @@ MonoBehaviour:
   roadWidthMultiplier: 1
   curvatureMultiplier: 1
   postProcessProfile: {fileID: 0}
+  environmentSet: {fileID: 11400000, guid: f2eeba52284ab7a469edf9f966c503a3, type: 2}

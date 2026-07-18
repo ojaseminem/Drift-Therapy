@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e88bc4aa5f6a8484cb4617ef8ba04ad7, type: 3}
+  m_Name: EnvSet_City
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeEnvironmentSet
+  categories:
+  - name: Buildings
+    prefabVariants:
+    - {fileID: 7772303161918199585, guid: 15b85ea047dc67d44b92f5a99aa0a3fb, type: 3}
+    - {fileID: 1256280990184726940, guid: b60b1a566e0748943b8315eaca538b64, type: 3}
+    - {fileID: 4907179193916978956, guid: 8b5cc5fd30a8b5f4a814795082bfcddf, type: 3}
+    minSpacing: 14
+    density: 0.75
+    sideOffsetRange: {x: 6, y: 24}
+    bothSides: 1
+    scaleJitter: {x: 0.9, y: 1.1}
+    yRotationJitterDeg: {x: 0, y: 360}
+    castShadows: 1
+  - name: Streetlights
+    prefabVariants:
+    - {fileID: 5109611889961577807, guid: 3753526ab56b46b4da3ec3da1610653b, type: 3}
+    minSpacing: 20
+    density: 0.5
+    sideOffsetRange: {x: 4, y: 5.5}
+    bothSides: 1
+    scaleJitter: {x: 0.95, y: 1.05}
+    yRotationJitterDeg: {x: 0, y: 0}
+    castShadows: 1

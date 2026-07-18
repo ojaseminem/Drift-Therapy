@@ -29,12 +29,20 @@ public class RoadBiomeManager : MonoBehaviour
     [Header("Transition")]
     [SerializeField] float crossfadeSpeed = 2f;   // lerp speed multiplier
 
+    [Header("Sequencing")]
+    [Tooltip("Shuffle the biome order once per run instead of always following authored startDistance order.")]
+    [SerializeField] bool shuffleOrderPerRun = true;
+
     // ── Runtime state ─────────────────────────────────────────────────────
     int   currentBiomeIndex;
     float blendT;                // 0=fully previous biome, 1=fully current
 
     BiomeData activeBiome;
     BiomeData previousBiome;
+
+    // Runtime-only start distances, parallel to biomes[] (post-shuffle order).
+    // Never written back to the BiomeData assets — those are shared, serialized ScriptableObjects.
+    float[] runtimeStartDistances;
 
     // Cache all active road segment renderers for live material updates
     readonly List<Renderer> roadRenderers = new List<Renderer>();
@@ -59,8 +67,18 @@ public class RoadBiomeManager : MonoBehaviour
             return;
         }
 
-        // Sort biomes by distance just in case they're out of order
-        System.Array.Sort(biomes, (a, b) => a.startDistance.CompareTo(b.startDistance));
+        if (shuffleOrderPerRun)
+        {
+            ShuffleBiomesAndAssignDistances();
+        }
+        else
+        {
+            // Sort biomes by distance just in case they're out of order
+            System.Array.Sort(biomes, (a, b) => a.startDistance.CompareTo(b.startDistance));
+            runtimeStartDistances = new float[biomes.Length];
+            for (int i = 0; i < biomes.Length; i++)
+                runtimeStartDistances[i] = biomes[i].startDistance;
+        }
 
         activeBiome   = biomes[0];
         previousBiome = biomes[0];
@@ -76,7 +94,7 @@ public class RoadBiomeManager : MonoBehaviour
 
         // Check if we should advance to next biome
         int nextIndex = currentBiomeIndex + 1;
-        if (nextIndex < biomes.Length && distance >= biomes[nextIndex].startDistance)
+        if (nextIndex < biomes.Length && distance >= runtimeStartDistances[nextIndex])
         {
             previousBiome      = activeBiome;
             currentBiomeIndex  = nextIndex;
@@ -90,7 +108,7 @@ public class RoadBiomeManager : MonoBehaviour
         if (blendT < 1f)
         {
             float transLen = Mathf.Max(1f, activeBiome.transitionLength);
-            float progress = (distance - activeBiome.startDistance) / transLen;
+            float progress = (distance - runtimeStartDistances[currentBiomeIndex]) / transLen;
             blendT = Mathf.Clamp01(progress * crossfadeSpeed);
             ApplyBlend(blendT);
         }
@@ -106,6 +124,30 @@ public class RoadBiomeManager : MonoBehaviour
     public void UnregisterSegmentRenderer(Renderer r)
     {
         roadRenderers.Remove(r);
+    }
+
+    // ── Sequencing ─────────────────────────────────────────────────────────
+    void ShuffleBiomesAndAssignDistances()
+    {
+        var rng = new System.Random(System.Environment.TickCount);
+
+        // Fisher-Yates shuffle
+        for (int i = biomes.Length - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            (biomes[i], biomes[j]) = (biomes[j], biomes[i]);
+        }
+
+        // Assign cumulative start distances from each biome's segmentDuration.
+        // Stored separately from BiomeData.startDistance — these assets are shared
+        // ScriptableObjects and must not be mutated at runtime.
+        runtimeStartDistances = new float[biomes.Length];
+        float cursor = 0f;
+        for (int i = 0; i < biomes.Length; i++)
+        {
+            runtimeStartDistances[i] = cursor;
+            cursor += Mathf.Max(1f, biomes[i].segmentDuration);
+        }
     }
 
     // ── Biome application ─────────────────────────────────────────────────
@@ -166,4 +208,9 @@ public class RoadBiomeManager : MonoBehaviour
     // ── Biome accessors (for curve generator multipliers) ─────────────────
     public float CurrentRoadWidthMultiplier  => activeBiome != null ? Mathf.Lerp(previousBiome?.roadWidthMultiplier ?? 1f,  activeBiome.roadWidthMultiplier,  blendT) : 1f;
     public float CurrentCurvatureMultiplier  => activeBiome != null ? Mathf.Lerp(previousBiome?.curvatureMultiplier ?? 1f, activeBiome.curvatureMultiplier, blendT) : 1f;
+
+    // ── Biome accessors (for EnvironmentPropScatterer) ─────────────────────
+    public BiomeData ActiveBiome   => activeBiome;
+    public BiomeData PreviousBiome => previousBiome;
+    public float      BlendT       => blendT;
 }

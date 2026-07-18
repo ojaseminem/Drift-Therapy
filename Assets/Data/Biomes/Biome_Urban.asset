@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 371a7d798f6d9bd4e829871b9e61048c, type: 3}
+  m_Name: Biome_Urban
+  m_EditorClassIdentifier: Assembly-CSharp::BiomeData
+  biomeName: Urban
+  startDistance: 0
+  transitionLength: 100
+  segmentDuration: 900
+  asphaltMaterial: {fileID: 2100000, guid: bcf292299dbdb4b40b283799b819674e, type: 2}
+  kerbMaterial: {fileID: 2100000, guid: c3c07c41d38630a42a4632128c2f6696, type: 2}
+  fogColor: {r: 0.5, g: 0.48, b: 0.45, a: 1}
+  fogDensity: 0.006
+  ambientSkyColor: {r: 0.42, g: 0.4, b: 0.38, a: 1}
+  ambientEquatorColor: {r: 0.28, g: 0.27, b: 0.25, a: 1}
+  groundMaterial: {fileID: 2100000, guid: e5e8794fab1d9d54db935201271b71ea, type: 2}
+  skyboxMaterial: {fileID: 0}
+  roadWidthMultiplier: 1
+  curvatureMultiplier: 1
+  postProcessProfile: {fileID: 0}
+  environmentSet: {fileID: 11400000, guid: 791493971fbbcc4499928e2d4e97aedd, type: 2}

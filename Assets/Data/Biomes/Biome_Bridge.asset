@@ -15,6 +15,7 @@ MonoBehaviour:
   biomeName: Bridge
   startDistance: 2600
   transitionLength: 120
+  segmentDuration: 400
   asphaltMaterial: {fileID: 2100000, guid: 2ba4f9ca85f24be4792b9ddb5bc5fa16, type: 2}
   kerbMaterial: {fileID: 2100000, guid: 93e90984766f3da4d912a9c114039d02, type: 2}
   fogColor: {r: 0.3, g: 0.4, b: 0.55, a: 1}
@@ -26,3 +27,4 @@ MonoBehaviour:
   roadWidthMultiplier: 0.95
   curvatureMultiplier: 1.1
   postProcessProfile: {fileID: 0}
+  environmentSet: {fileID: 11400000, guid: 92bf26bc12092644297e98f813a8cd9e, type: 2}

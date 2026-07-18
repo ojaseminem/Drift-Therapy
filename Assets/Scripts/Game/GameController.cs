@@ -32,6 +32,13 @@ public class GameController : MonoBehaviour
     [Tooltip("Seconds of 3-2-1 countdown before the run begins (and car unlocks).")]
     [SerializeField] int countdownSeconds = 3;
 
+    [Header("Crash Sequence")]
+    [Tooltip("Seconds the crash physics play out before the game-over screen appears.")]
+    [SerializeField] float crashWatchSeconds = 3f;
+    [SerializeField] float crashImpulseForce = 6f;
+    [SerializeField] float crashUpwardForce = 2.5f;
+    [SerializeField] float crashSpinTorque = 4f;
+
     [Header("Score Tuning")]
     [SerializeField] float comboStepDistance = 25f;
     [SerializeField] float multiplierStep = 0.5f;
@@ -39,6 +46,8 @@ public class GameController : MonoBehaviour
 
     [Header("Vehicle / Economy / Boost")]
     [SerializeField] VehicleHealth vehicle;
+    [SerializeField] FenceCollisionDetector fenceDetector;
+    [SerializeField] FenceSparkEffect fenceSparkEffect;
     [SerializeField] float driftCoinRate = 0.6f;            // pending drift coins per drift metre
     [SerializeField] float driftCommitGraceSeconds = 0.75f;
     [SerializeField] int nearMissDriftCoins = 5;
@@ -61,6 +70,7 @@ public class GameController : MonoBehaviour
     float bestDistanceMeters;
     bool paused;
     Coroutine countdownRoutine;
+    Coroutine crashRoutine;
 
     // ── Lifecycle ───────────────────────────────────────────────────────────
     void Awake()
@@ -75,6 +85,8 @@ public class GameController : MonoBehaviour
             : Mathf.Max(0f, SaveService.GetBestScore());
 
         if (!vehicle && player != null) vehicle = player.GetComponent<VehicleHealth>();
+        if (!fenceDetector && player != null) fenceDetector = player.GetComponent<FenceCollisionDetector>();
+        if (!fenceSparkEffect && player != null) fenceSparkEffect = player.GetComponent<FenceSparkEffect>();
     }
 
     /// <summary>
@@ -119,6 +131,12 @@ public class GameController : MonoBehaviour
             vehicle.Totaled += HandleTotaled;
             vehicle.HealthChanged += GameSignals.RaiseHealthChanged;
         }
+
+        if (fenceDetector != null)
+        {
+            fenceDetector.Screeched += HandleFenceScreeched;
+            fenceDetector.Crashed += HandleFenceCrashed;
+        }
     }
 
     void OnDisable()
@@ -152,6 +170,12 @@ public class GameController : MonoBehaviour
         {
             vehicle.Totaled -= HandleTotaled;
             vehicle.HealthChanged -= GameSignals.RaiseHealthChanged;
+        }
+
+        if (fenceDetector != null)
+        {
+            fenceDetector.Screeched -= HandleFenceScreeched;
+            fenceDetector.Crashed -= HandleFenceCrashed;
         }
     }
 
@@ -466,7 +490,7 @@ public class GameController : MonoBehaviour
         var agent = trafficGo != null ? trafficGo.GetComponentInParent<TrafficAgent>() : null;
         if (agent != null)
         {
-            runState.FailRun("crash");
+            TriggerCrash("crash", trafficGo.transform.position);
             return;
         }
 
@@ -477,14 +501,51 @@ public class GameController : MonoBehaviour
         }
         else
         {
-            runState.FailRun("collision");
+            TriggerCrash("collision", null);
         }
     }
 
     void HandleTotaled()
     {
         if (runState.CurrentState == RunState.Running)
-            runState.FailRun("totaled");
+            TriggerCrash("totaled", null);
+    }
+
+    void HandleFenceScreeched(Vector3 contactPoint, Vector3 contactNormal)
+    {
+        if (runState.CurrentState != RunState.Running) return;
+        if (fenceSparkEffect != null) fenceSparkEffect.PlayAt(contactPoint, contactNormal);
+    }
+
+    void HandleFenceCrashed(Vector3 contactPoint)
+    {
+        if (runState.CurrentState != RunState.Running) return;
+        TriggerCrash("fence", contactPoint);
+    }
+
+    /// <summary>
+    /// Cuts to the crash-watch state: physics play out the impact for
+    /// <see cref="crashWatchSeconds"/> (camera keeps following, no further scoring)
+    /// before the run actually ends and the game-over screen appears.
+    /// </summary>
+    void TriggerCrash(string reason, Vector3? impactWorldPos)
+    {
+        if (!runState.BeginCrash()) return;
+
+        if (car != null)
+        {
+            car.ApplyCrashImpulse(impactWorldPos, crashImpulseForce, crashUpwardForce, crashSpinTorque);
+        }
+
+        if (crashRoutine != null) StopCoroutine(crashRoutine);
+        crashRoutine = StartCoroutine(CrashSequence(reason));
+    }
+
+    IEnumerator CrashSequence(string reason)
+    {
+        yield return new WaitForSeconds(crashWatchSeconds);
+        crashRoutine = null;
+        runState.FailRun(reason);
     }
 
     void CommitDriftCombo()
@@ -518,6 +579,7 @@ public class GameController : MonoBehaviour
     void ResetRunSystems()
     {
         if (vehicle != null) vehicle.ResetHealth();
+        if (fenceDetector != null) fenceDetector.ResetState();
         driftCoinsTotal = 0;
         driftCoinsPendingRaw = 0f;
         driftTrailInactiveTime = 0f;
