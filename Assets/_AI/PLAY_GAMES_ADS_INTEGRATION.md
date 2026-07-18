@@ -31,20 +31,30 @@
 - **Achievements**: `GameApp.TryUnlockAchievement(id)` is the single entry
   point (locally deduped via `PlayerData.unlockedAchievementIds`, then
   forwards to `PlatformServices.PlayGames.UnlockAchievement`). All ids live in
-  `Assets/Scripts/Meta/AchievementIds.cs`. 10 achievements total:
-  - 5 mission-linked (unlocked via `GameApp.ClaimMission`, ids already set on
-    the 5 `Cumulative`-scope `MissionDef` assets in `Assets/Data/Missions/`):
-    Road Warrior, Near Miss Master, Coin Collector, Dedicated Drifter, Combo Chaser.
-  - 5 standalone milestones, unlocked directly at their trigger point: First
-    Drift (first run ever), Speed Demon (2,000m in one run —
-    `GameController.HandleRunFailed`), Garage Collector (own 5+ vehicles),
-    Full House (own every vehicle), Supporter (Remove Ads purchased — both
-    in `GameApp.cs`).
+  `Assets/Scripts/Meta/AchievementIds.cs` — **26 achievements total**, listed
+  in full in §3.
+- **Ads are live** (no longer Phase 4 placeholders):
+  - `GameController.HandleReviveRequested()` gates the revive behind
+    `PlatformServices.Ads.ShowRewarded`, but only once `GameApp.AdsUnlocked`
+    (see below) — both the ad-fail path and the not-yet-unlocked path fall
+    through to a free revive (`DoRevive()`), so a bad ad load or a new
+    player never gets stranded.
+  - `GameHudUI.ProceedWithPossibleAd` gates the game-over screen's Retry/Home
+    buttons behind `PlatformServices.Ads.ShowInterstitial` (only the game-over
+    buttons — the pause menu's Home/Restart are untouched). If no ad is
+    allowed/ready, a brief "LOADING..." overlay (`GameHudUI.loadingPanel`)
+    plays instead so the tap always feels like it went somewhere.
+  - `GameApp.AdsUnlocked` (`Data.totalRunsCompleted > 10`) is a hard gate in
+    front of both — a player's first 10 completed runs never show any ad,
+    interstitial or rewarded.
 - **IAP is real** (unchanged): `Assets/Scripts/Services/IAPService.cs`, Unity
   IAP classic API, `remove_ads` non-consumable + all `CurrencyPackDef` packs.
 - **Consent is still a stub** (`IConsentService`/`StubConsentService`) —
   needs a real CMP (e.g. Google UMP) before Ads.Init() should really gate on
   it. Not blocking today since LevelPlay itself is also unconfigured.
+- **Settings** has a "Reset Progress" button (`SettingsPopup.resetDataButton`,
+  tap-to-arm/second-tap-confirms) that calls `GameApp.ClearSavedData()` — handy
+  for testing the 10-run ad-free grace period without waiting 10 real runs.
 - Android `applicationId`: `com.turtlegameworks.drifttherapy`.
 
 ## 2. Call-site table — final state
@@ -52,12 +62,12 @@
 | # | File : Method | State |
 |---|---|---|
 | 1 | `PlatformServices.cs : Init()` | ✅ Real `GooglePlayGamesService`/`LevelPlayAdsService` constructed; `SignIn(null)` called on boot |
-| 2 | `GameController.cs : HandleRunFailed()` | ✅ Submits to both `LeaderboardProvider.Current` (local) and `PlatformServices.PlayGames.SubmitScore("top_runs", ...)` (online); also unlocks First Drift / Speed Demon |
+| 2 | `GameController.cs : HandleRunFailed()` | ✅ Submits to both `LeaderboardProvider.Current` (local) and `PlatformServices.PlayGames.SubmitScore("top_runs", ...)` (online); also reports the 3 per-run trial metrics and unlocks several achievements |
 | 3 | `GameApp.cs : ClaimMission()` | ✅ Routes through `TryUnlockAchievement(def.achievementId)` |
-| 4 | `GameApp.cs : TryBuy()` / `SetRemoveAdsOwned()` | ✅ New standalone achievement unlocks (Garage Collector, Full House, Supporter) |
+| 4 | `GameApp.cs` various | ✅ Achievement unlocks spread across `SubmitRun`, `TryBuy`, `TryBuySkin`, `TryBuyAttachment`, `TryBuyBooster`, `AddCoins`, `AddGems`, `GrantCurrencyPack`, `SetRemoveAdsOwned`, `IncrementFenceScreech` |
 | 5 | `LeaderboardPopup.cs : Start()` | ✅ Unchanged code, now functions for real — "View Global" shows once `IsAvailable` (already true) |
-| 6 | `GameController.cs : HandleReviveRequested()` | ⏸ **Untouched on purpose** — still an unconditional free revive, no `Ads.ShowRewarded` call. See §4, Phase 4. |
-| 7 | `GameHudUI.cs` end-panel home/restart handlers | ⏸ **Untouched on purpose** — no `Ads.ShowInterstitial` call anywhere yet. See §4, Phase 4. |
+| 6 | `GameController.cs : HandleReviveRequested()` | ✅ Gated behind `Ads.ShowRewarded` + `GameApp.AdsUnlocked`, non-punishing fallback to free revive |
+| 7 | `GameHudUI.cs : ProceedWithPossibleAd()` | ✅ Game-over Retry/Home gated behind `Ads.ShowInterstitial` + `AdsUnlocked`, loading-screen fallback otherwise |
 | 8 | `PlatformServices.cs : Init()` (Consent gate) | ⏳ Still `StubConsentService` — real CMP not yet chosen/wired |
 | 9 | `IAPService.cs` | Working (classic Unity IAP API), v5 migration optional/not urgent |
 
@@ -72,12 +82,46 @@
    `Assets/Plugins/Android/AndroidManifest.xml` with the required meta-data
    and generates the resource files GPGS needs — cannot be done without step 1.
 3. In the Play Console, create the leaderboard with id **`top_runs`** (must
-   match exactly — already hardcoded at every call site above) and the 10
-   achievements listed in §1 using the exact id strings in `AchievementIds.cs`.
+   match exactly — already hardcoded at every call site above) and all 26
+   achievements listed in §3a using the exact id strings in `AchievementIds.cs`.
 4. Rebuild and test sign-in on a real device/Play-Store-track build — GPGS
    does not function in the Unity Editor or on non-Android platforms (both
    `GooglePlayGamesService` methods and `LeaderboardPopup`'s button already
    handle that gracefully; there's nothing more to change here).
+
+### 3a. Full achievement list (create these 26 in the Play Console)
+
+All ids are in `Assets/Scripts/Meta/AchievementIds.cs` — the string there is
+final and must match exactly what you create in the Play Console.
+
+| Id | Name (suggested) | Unlock condition |
+|---|---|---|
+| `achievement_road_warrior` | Road Warrior | 10,000m lifetime distance |
+| `achievement_near_miss_master` | Near Miss Master | 100 near misses lifetime |
+| `achievement_coin_collector` | Coin Collector | 5,000 coins earned lifetime |
+| `achievement_dedicated_drifter` | Dedicated Drifter | 50 runs completed |
+| `achievement_combo_chaser` | Combo Chaser | 300 combo, lifetime |
+| `achievement_first_drift` | First Drift | Complete your first run |
+| `achievement_speed_demon` | Speed Demon | 2,000m in a single run |
+| `achievement_garage_collector` | Garage Collector | Own 5+ vehicles |
+| `achievement_full_house` | Full House | Own every vehicle |
+| `achievement_supporter` | Supporter | Purchase Remove Ads |
+| `achievement_first_mile` | First Mile | 1,000m lifetime distance |
+| `achievement_marathoner` | Marathoner | 50,000m lifetime distance |
+| `achievement_road_legend` | Road Legend | 100,000m lifetime distance |
+| `achievement_endless_horizon` | Endless Horizon | 5,000m in a single run |
+| `achievement_drift_king` | Drift King | 20x combo in a single run |
+| `achievement_daredevil` | Daredevil | 10 near misses in a single run |
+| `achievement_coin_baron` | Coin Baron | Hold 10,000 coins at once |
+| `achievement_gem_hunter` | Gem Hunter | Hold 100 gems at once |
+| `achievement_veteran_drifter` | Veteran Drifter | 200 runs completed |
+| `achievement_daily_devotee` | Daily Devotee | 7-day login streak |
+| `achievement_streak_master` | Streak Master | 30-day login streak |
+| `achievement_fashionista` | Fashionista | Own 5 vehicle skins total |
+| `achievement_tuner` | Tuner | Own 3 cosmetic attachments |
+| `achievement_trailblazer` | Trailblazer | Own 3 booster skins |
+| `achievement_first_purchase` | Big Spender | Complete your first real-money purchase |
+| `achievement_wall_hugger` | Wall Hugger | 10 lifetime fence screeches (no crash) |
 
 **LevelPlay (Unity Ads Mediation):**
 1. Create/verify your app in the [LevelPlay dashboard](https://platform.unity.com)
@@ -94,15 +138,14 @@
    `LevelPlay.Init(...)` and preload both ad types automatically — still no
    gameplay code shows them yet (see §4).
 
-## 4. Ad placement — deliberately not wired yet
+## 4. Ad placement — live
 
-Two real gameplay hooks exist but are intentionally left alone for now:
-`GameController.HandleReviveRequested()` (still an unconditional free revive)
-and `GameHudUI.cs`'s end-panel Home/Restart buttons (no interstitial call).
-Wiring these is "Phase 4" — a monetization/UX decision, not a technical one.
-See the ad-placement strategy delivered separately in-session for the
-recommended approach (interstitial frequency-capping, rewarded revive with a
-non-punishing failure fallback per §5 below) before flipping these on.
+Both hooks are wired: `GameController.HandleReviveRequested()` (rewarded) and
+`GameHudUI.ProceedWithPossibleAd()` on the game-over Retry/Home buttons
+(interstitial). Both respect `GameApp.AdsUnlocked` (first 10 runs are always
+ad-free) and both fall back gracefully rather than blocking the player when
+no ad is ready. No banner is used — see the original ad-placement report
+delivered in-session for the full reasoning.
 
 ## 5. Do not regress
 
