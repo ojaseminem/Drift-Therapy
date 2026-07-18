@@ -51,6 +51,17 @@ namespace DriftTherapy
             currentDef = def;
             manualRotationOverride = 0f;
             RefreshTint();
+            RefreshAttachments();
+        }
+
+        /// <summary>Re-applies the currently-shown vehicle's equipped attachments. Call this
+        /// after a Store purchase/equip so the turntable updates without needing to re-show.</summary>
+        public void RefreshAttachments()
+        {
+            if (currentInstance == null || currentDef == null) return;
+            var attachments = currentInstance.GetComponent<VehicleAttachmentController>();
+            if (attachments == null) attachments = currentInstance.AddComponent<VehicleAttachmentController>();
+            attachments.Bind(currentDef.id);
         }
 
         /// <summary>

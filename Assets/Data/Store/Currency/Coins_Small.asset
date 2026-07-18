@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e15c9860cde14542a33519902600ef5, type: 3}
+  m_Name: Coins_Small
+  m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.CurrencyPackDef
+  id: Coins_Small
+  productId: coins_small
+  displayName: Small Drift Coin Pack
+  currencyType: 0
+  amount: 1000
+  bonusPercent: 0
+  fallbackPriceText: $0.99

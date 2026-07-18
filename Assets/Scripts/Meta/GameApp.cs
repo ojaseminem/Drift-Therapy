@@ -42,6 +42,15 @@ namespace DriftTherapy
         public string skinId;
     }
 
+    /// <summary>Which attachment is equipped in one (vehicleId, slotId) mount slot.</summary>
+    [Serializable]
+    public class EquippedAttachmentState
+    {
+        public string vehicleId;
+        public string slotId;
+        public string attachmentId;
+    }
+
     /// <summary>Persistent player save model (JSON via PlayerPrefs).</summary>
     [Serializable]
     public class PlayerData
@@ -59,6 +68,15 @@ namespace DriftTherapy
         // ── Vehicle skins (colour variants, keyed "vehicleId:skinId") ───────
         public List<string> ownedSkinKeys = new List<string>();
         public List<EquippedSkinState> equippedSkins = new List<EquippedSkinState>();
+
+        // ── Cosmetic attachments (spoilers, underglow, ...) ─────────────────
+        public List<string> ownedAttachmentIds = new List<string>();
+        public List<EquippedAttachmentState> equippedAttachments = new List<EquippedAttachmentState>();
+
+        // ── Booster/trail VFX skins ──────────────────────────────────────────
+        public List<string> ownedBoosterIds = new List<string>();
+        public string equippedBoosterId = "";
+
         public float musicVolume = 1f;
         public float sfxVolume = 1f;
         public bool haptics = true;
@@ -101,10 +119,18 @@ namespace DriftTherapy
         [Tooltip("All purchasable Drift Coins/Gems packs in the shop catalog.")]
         [SerializeField] CurrencyPackDef[] currencyPacks;
 
+        [Tooltip("All purchasable cosmetic attachments (spoilers, underglow, ...) in the store catalog.")]
+        [SerializeField] CosmeticAttachmentDef[] attachments;
+
+        [Tooltip("All purchasable boost-trail color skins in the store catalog.")]
+        [SerializeField] BoosterSkinDef[] boosters;
+
         public PlayerData Data { get; private set; }
         public IReadOnlyList<VehicleDef> Vehicles => vehicles;
         public IReadOnlyList<MissionDef> Missions => missions;
         public IReadOnlyList<CurrencyPackDef> CurrencyPacks => currencyPacks;
+        public IReadOnlyList<CosmeticAttachmentDef> Attachments => attachments;
+        public IReadOnlyList<BoosterSkinDef> Boosters => boosters;
 
         /// <summary>Raised whenever wallet / profile / ownership changes.</summary>
         public event Action Changed;
@@ -172,6 +198,10 @@ namespace DriftTherapy
             if (Data.ownedVehicleIds == null) Data.ownedVehicleIds = new List<string>();
             if (Data.ownedSkinKeys == null) Data.ownedSkinKeys = new List<string>();
             if (Data.equippedSkins == null) Data.equippedSkins = new List<EquippedSkinState>();
+            if (Data.ownedAttachmentIds == null) Data.ownedAttachmentIds = new List<string>();
+            if (Data.equippedAttachments == null) Data.equippedAttachments = new List<EquippedAttachmentState>();
+            if (Data.ownedBoosterIds == null) Data.ownedBoosterIds = new List<string>();
+            if (Data.equippedBoosterId == null) Data.equippedBoosterId = "";
 
             // Grant any default-owned vehicles.
             if (vehicles != null)
@@ -196,6 +226,25 @@ namespace DriftTherapy
                         if (s != null && s.ownedByDefault && !Data.ownedSkinKeys.Contains(SkinKey(v.id, s.id)))
                             Data.ownedSkinKeys.Add(SkinKey(v.id, s.id));
                 }
+
+            // Grant any default-owned attachments/boosters.
+            if (attachments != null)
+                foreach (var a in attachments)
+                    if (a != null && a.ownedByDefault && !Data.ownedAttachmentIds.Contains(a.id))
+                        Data.ownedAttachmentIds.Add(a.id);
+
+            if (boosters != null)
+            {
+                foreach (var b in boosters)
+                    if (b != null && b.ownedByDefault && !Data.ownedBoosterIds.Contains(b.id))
+                        Data.ownedBoosterIds.Add(b.id);
+
+                if (string.IsNullOrEmpty(Data.equippedBoosterId))
+                {
+                    foreach (var b in boosters)
+                        if (b != null && b.ownedByDefault) { Data.equippedBoosterId = b.id; break; }
+                }
+            }
 
             EnsureDailyChallenge();
         }
@@ -344,6 +393,111 @@ namespace DriftTherapy
             Data.equippedSkins.Add(new EquippedSkinState { vehicleId = vehicleId, skinId = skinId });
             Save();
             Changed?.Invoke();
+        }
+
+        // ── Cosmetic attachments (spoilers, underglow, ...) ──────────────────
+        public CosmeticAttachmentDef GetAttachmentDef(string id)
+        {
+            if (attachments == null || string.IsNullOrEmpty(id)) return null;
+            foreach (var a in attachments) if (a != null && a.id == id) return a;
+            return null;
+        }
+
+        public bool OwnsAttachment(string id) => Data.ownedAttachmentIds.Contains(id);
+
+        /// <summary>Buys an attachment with coins (useGems: false) or gems (useGems: true). Returns false if already owned or insufficient balance.</summary>
+        public bool TryBuyAttachment(CosmeticAttachmentDef def, bool useGems)
+        {
+            if (def == null || OwnsAttachment(def.id)) return false;
+            bool spent = useGems ? TrySpendGems(def.gemPrice) : TrySpendCoins(def.price);
+            if (!spent) return false;
+            Data.ownedAttachmentIds.Add(def.id);
+            Save();
+            Changed?.Invoke();
+            return true;
+        }
+
+        /// <summary>The attachment id equipped in <paramref name="slotId"/> on <paramref name="vehicleId"/>, or null if that slot is empty.</summary>
+        public string GetEquippedAttachmentId(string vehicleId, string slotId)
+        {
+            for (int i = 0; i < Data.equippedAttachments.Count; i++)
+            {
+                var e = Data.equippedAttachments[i];
+                if (e.vehicleId == vehicleId && e.slotId == slotId) return e.attachmentId;
+            }
+            return null;
+        }
+
+        /// <summary>Equips an owned attachment into its slot on a vehicle (replacing whatever was there).</summary>
+        public void EquipAttachment(string vehicleId, string slotId, string attachmentId)
+        {
+            if (!OwnsAttachment(attachmentId)) return;
+            for (int i = 0; i < Data.equippedAttachments.Count; i++)
+            {
+                var e = Data.equippedAttachments[i];
+                if (e.vehicleId == vehicleId && e.slotId == slotId)
+                {
+                    e.attachmentId = attachmentId;
+                    Save();
+                    Changed?.Invoke();
+                    return;
+                }
+            }
+            Data.equippedAttachments.Add(new EquippedAttachmentState { vehicleId = vehicleId, slotId = slotId, attachmentId = attachmentId });
+            Save();
+            Changed?.Invoke();
+        }
+
+        /// <summary>Clears whatever is equipped in a slot (the vehicle goes back to bare for that slot).</summary>
+        public void UnequipAttachmentSlot(string vehicleId, string slotId)
+        {
+            for (int i = 0; i < Data.equippedAttachments.Count; i++)
+            {
+                if (Data.equippedAttachments[i].vehicleId == vehicleId && Data.equippedAttachments[i].slotId == slotId)
+                {
+                    Data.equippedAttachments.RemoveAt(i);
+                    Save();
+                    Changed?.Invoke();
+                    return;
+                }
+            }
+        }
+
+        // ── Booster/trail VFX skins ───────────────────────────────────────────
+        public BoosterSkinDef GetBoosterDef(string id)
+        {
+            if (boosters == null || string.IsNullOrEmpty(id)) return null;
+            foreach (var b in boosters) if (b != null && b.id == id) return b;
+            return null;
+        }
+
+        public bool OwnsBooster(string id) => Data.ownedBoosterIds.Contains(id);
+
+        /// <summary>Buys a booster skin with coins (useGems: false) or gems (useGems: true). Returns false if already owned or insufficient balance.</summary>
+        public bool TryBuyBooster(BoosterSkinDef def, bool useGems)
+        {
+            if (def == null || OwnsBooster(def.id)) return false;
+            bool spent = useGems ? TrySpendGems(def.gemPrice) : TrySpendCoins(def.price);
+            if (!spent) return false;
+            Data.ownedBoosterIds.Add(def.id);
+            Save();
+            Changed?.Invoke();
+            return true;
+        }
+
+        public void SelectBooster(string id)
+        {
+            if (!OwnsBooster(id)) return;
+            Data.equippedBoosterId = id;
+            Save();
+            Changed?.Invoke();
+        }
+
+        /// <summary>The trail color to use right now, or null if no booster is equipped (caller should keep its own default).</summary>
+        public Color? GetEquippedBoosterColor()
+        {
+            var def = GetBoosterDef(Data.equippedBoosterId);
+            return def != null ? def.trailColor : (Color?)null;
         }
 
         // ── Currency packs (IAP) ─────────────────────────────────────────────

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6d6d094270ac0824aa4b1514d77f98ce, type: 3}
+  m_Name: Underglow_Blue
+  m_EditorClassIdentifier: Assembly-CSharp::DriftTherapy.CosmeticAttachmentDef
+  id: Underglow_Blue
+  displayName: Blue Underglow
+  slotId: Underglow
+  attachmentPrefab: {fileID: 4989028328716658240, guid: f6db40973f0c7ab4bbebd4bd3a93dfc3,
+    type: 3}
+  price: 600
+  gemPrice: 0
+  ownedByDefault: 0

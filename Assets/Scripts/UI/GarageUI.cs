@@ -147,7 +147,11 @@ namespace DriftTherapy
                 di++;
             }
             RefreshStats();
-            if (display != null) display.RefreshTint();
+            if (display != null)
+            {
+                display.RefreshTint();
+                display.RefreshAttachments();
+            }
         }
 
         void RefreshStats()

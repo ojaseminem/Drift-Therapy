@@ -23,6 +23,16 @@ public class ComboSmokeFx : MonoBehaviour
     void OnEnable() => GameSignals.MultiplierChanged += HandleMultiplierChanged;
     void OnDisable() => GameSignals.MultiplierChanged -= HandleMultiplierChanged;
 
+    /// <summary>The equipped booster skin's trail color, falling back to the default if none is equipped/owned.</summary>
+    Color EffectiveBaseColor
+    {
+        get
+        {
+            var equipped = DriftTherapy.GameApp.Instance != null ? DriftTherapy.GameApp.Instance.GetEquippedBoosterColor() : null;
+            return equipped ?? baseColor;
+        }
+    }
+
     void HandleMultiplierChanged(float mult, int combo)
     {
         var tier = ScoreSystem.GetComboTier(combo);
@@ -41,7 +51,7 @@ public class ComboSmokeFx : MonoBehaviour
         if (particles == null) return;
 
         var main = particles.main;
-        main.startColor = Color.Lerp(baseColor, legendTintColor, currentT);
+        main.startColor = Color.Lerp(EffectiveBaseColor, legendTintColor, currentT);
         main.startSizeMultiplier = Mathf.Lerp(1f, maxSizeMultiplier, currentT);
     }
 }

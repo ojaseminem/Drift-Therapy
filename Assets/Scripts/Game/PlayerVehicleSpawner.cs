@@ -62,6 +62,10 @@ namespace DriftTherapy
             if (fenceSpark == null) fenceSpark = instance.AddComponent<FenceSparkEffect>();
             fenceSpark.SetSparkPrefab(fenceSparkVfxPrefab);
 
+            var attachments = instance.GetComponent<VehicleAttachmentController>();
+            if (attachments == null) attachments = instance.AddComponent<VehicleAttachmentController>();
+            attachments.Bind(def != null ? def.id : "");
+
             if (gameController != null) gameController.SetPlayer(SpawnedPlayer, SpawnedVehicleHealth, SpawnedCarController);
             if (trafficSensor != null) trafficSensor.SetPlayer(SpawnedPlayer, SpawnedCarController);
             if (hud != null) hud.SetPlayer(SpawnedPlayer);

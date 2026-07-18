@@ -189,7 +189,7 @@ namespace DriftTherapy.EditorTools
             ui.popups = ph.gameObject.AddComponent<PopupHandler>();
             ui.missionsPopup    = BuildMissionsPopup();
             ui.trialsPopup      = BuildTrialsPopup();
-            ui.shopPopup        = BuildCurrencyShopPopup();
+            ui.shopPopup        = BuildStorePopup();
             ui.leaderboardPopup = BuildLeaderboardPopup();
             ui.settingsPopup    = BuildSettingsPopup();
             ui.onboardingPopup  = BuildOnboardingPopup();
@@ -381,18 +381,145 @@ namespace DriftTherapy.EditorTools
             return row.gameObject;
         }
 
-        static GameObject BuildCurrencyShopPopup()
+        // ── Store (Cars / Boosters / Cosmetics / Currency / No Ads tabs) ────
+        static Button TabBtn(Transform p, string label, int i, int totalSlots)
         {
-            var (rt, card, _) = PopupRoot("CurrencyShopPopup", 50, 240);
-            var sp = rt.gameObject.AddComponent<CurrencyShopPopup>();
-            var t = Txt(card, "Title", "GET COINS & GEMS", 54, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(700, 90), new Vector2(0, -40));
+            var b = Btn(p, label, label, Panel, White, 24); // runtime StorePopup.ShowTab drives active coloring
+            var rt = (RectTransform)b.transform;
+            rt.anchorMin = new Vector2(i / (float)totalSlots, 0); rt.anchorMax = new Vector2((i + 1) / (float)totalSlots, 1);
+            rt.pivot = new Vector2(0.5f, 0.5f); rt.offsetMin = new Vector2(6, 6); rt.offsetMax = new Vector2(-6, -6);
+            return b;
+        }
+
+        /// <summary>One tab's content pane: a stretched, CanvasGroup-bearing root with a
+        /// VerticalLayoutGroup'd Content child, populated with a row template built by
+        /// <paramref name="rowBuilder"/>. Mirrors MissionsPopup/TrialsPopup's list pattern.</summary>
+        static GameObject BuildStoreListPane(Transform parent, string name, out Transform content, out GameObject rowTemplate, System.Func<Transform, GameObject> rowBuilder)
+        {
+            var pane = RT(parent, name); Stretch(pane);
+            pane.gameObject.AddComponent<CanvasGroup>();
+
+            var contentRt = RT(pane, "Content"); Stretch(contentRt);
+            var vlg = contentRt.gameObject.AddComponent<VerticalLayoutGroup>();
+            vlg.spacing = 14; vlg.childForceExpandHeight = false; vlg.childControlHeight = false; vlg.childControlWidth = true; vlg.childForceExpandWidth = true;
+
+            content = contentRt;
+            rowTemplate = rowBuilder(contentRt);
+            return pane.gameObject;
+        }
+
+        static GameObject BuildStoreCarRow(Transform content)
+        {
+            var row = Img(content, "RowTemplate", Dark);
+            row.gameObject.AddComponent<CanvasGroup>();
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 120; le.preferredHeight = 120;
+
+            var name = Txt(row.transform, "Name", "Vehicle", 30, White, TextAlignmentOptions.Left);
+            Box(name.rectTransform, new Vector2(0, 0.5f), new Vector2(420, 60), new Vector2(30, 10));
+
+            var price = Txt(row.transform, "Price", "0", 26, Coin, TextAlignmentOptions.Left);
+            Box(price.rectTransform, new Vector2(0, 0.5f), new Vector2(200, 40), new Vector2(30, -34));
+
+            var action = Btn(row.transform, "Action", "BUY", Coin, Ink, 28);
+            Box((RectTransform)action.transform, new Vector2(1, 0.5f), new Vector2(220, 90), new Vector2(-24, 0));
+
+            return row.gameObject;
+        }
+
+        static GameObject BuildStoreBoosterRow(Transform content)
+        {
+            var row = Img(content, "RowTemplate", Dark);
+            row.gameObject.AddComponent<CanvasGroup>();
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 120; le.preferredHeight = 120;
+
+            var dot = Img(row.transform, "Dot", White);
+            Box((RectTransform)dot.transform, new Vector2(0, 0.5f), new Vector2(56, 56), new Vector2(30, 0));
+
+            var name = Txt(row.transform, "Name", "Booster", 30, White, TextAlignmentOptions.Left);
+            Box(name.rectTransform, new Vector2(0, 0.5f), new Vector2(360, 60), new Vector2(110, 10));
+
+            var price = Txt(row.transform, "Price", "0", 26, Coin, TextAlignmentOptions.Left);
+            Box(price.rectTransform, new Vector2(0, 0.5f), new Vector2(200, 40), new Vector2(110, -34));
+
+            var action = Btn(row.transform, "Action", "BUY", Coin, Ink, 28);
+            Box((RectTransform)action.transform, new Vector2(1, 0.5f), new Vector2(220, 90), new Vector2(-24, 0));
+
+            return row.gameObject;
+        }
+
+        static GameObject BuildStoreCosmeticRow(Transform content)
+        {
+            var row = Img(content, "RowTemplate", Dark);
+            row.gameObject.AddComponent<CanvasGroup>();
+            var le = row.gameObject.AddComponent<LayoutElement>(); le.minHeight = 130; le.preferredHeight = 130;
+
+            var name = Txt(row.transform, "Name", "Attachment", 30, White, TextAlignmentOptions.Left);
+            Box(name.rectTransform, new Vector2(0, 1), new Vector2(500, 50), new Vector2(30, -14));
+
+            var slot = Txt(row.transform, "Slot", "SLOT", 20, Dim, TextAlignmentOptions.Left);
+            Box(slot.rectTransform, new Vector2(0, 0), new Vector2(300, 34), new Vector2(30, 14));
+
+            var price = Txt(row.transform, "Price", "0", 26, Coin, TextAlignmentOptions.Left);
+            Box(price.rectTransform, new Vector2(0, 0), new Vector2(200, 34), new Vector2(340, 14));
+
+            var action = Btn(row.transform, "Action", "BUY", Coin, Ink, 28);
+            Box((RectTransform)action.transform, new Vector2(1, 0.5f), new Vector2(220, 90), new Vector2(-24, 0));
+
+            return row.gameObject;
+        }
+
+        static GameObject BuildStoreNoAdsPane(Transform parent, out Button noAdsButton)
+        {
+            var pane = RT(parent, "NoAdsPane"); Stretch(pane);
+            pane.gameObject.AddComponent<CanvasGroup>();
+
+            var tile = Img(pane, "Tile", Dark);
+            Box((RectTransform)tile.transform, new Vector2(0.5f, 0.5f), new Vector2(700, 320), Vector2.zero);
+            var title = Txt(tile.transform, "Title", "REMOVE ALL ADS", 36, White);
+            Box(title.rectTransform, new Vector2(0.5f, 1), new Vector2(600, 60), new Vector2(0, -30));
+            var desc = Txt(tile.transform, "Desc", "One-time purchase. No more interstitials, ever.", 22, Dim);
+            Box(desc.rectTransform, new Vector2(0.5f, 1), new Vector2(600, 80), new Vector2(0, -100));
+
+            noAdsButton = Btn(tile.transform, "Action", "REMOVE ADS", Coin, Ink, 32);
+            Box((RectTransform)noAdsButton.transform, new Vector2(0.5f, 0), new Vector2(420, 100), new Vector2(0, 40));
+
+            return pane.gameObject;
+        }
+
+        static GameObject BuildStorePopup()
+        {
+            var (rt, card, _) = PopupRoot("StorePopup", 40, 240);
+            var sp = rt.gameObject.AddComponent<StorePopup>();
+            var t = Txt(card, "Title", "STORE", 64, Accent); Box(t.rectTransform, new Vector2(0.5f, 1), new Vector2(500, 90), new Vector2(0, -40));
             sp.closeButton = Btn(card, "Close", "X", Accent2, Ink, 44); Box((RectTransform)sp.closeButton.transform, new Vector2(1, 1), new Vector2(90, 90), new Vector2(-24, -24));
 
-            var content = RT(card, "Content"); Stretch(content, 30, 30, 150, 40);
-            var vlg = content.gameObject.AddComponent<VerticalLayoutGroup>(); vlg.spacing = 14; vlg.childForceExpandHeight = false; vlg.childControlHeight = false; vlg.childControlWidth = true; vlg.childForceExpandWidth = true;
-            sp.content = content;
-            sp.rowTemplate = BuildCurrencyPackRow(content);
-            return SavePopup(rt.gameObject, Dir + "/Popups/CurrencyShopPopup.prefab");
+            var tabStrip = RT(card, "TabStrip");
+            tabStrip.anchorMin = new Vector2(0, 1); tabStrip.anchorMax = new Vector2(1, 1); tabStrip.pivot = new Vector2(0.5f, 1);
+            tabStrip.sizeDelta = new Vector2(-60, 110); tabStrip.anchoredPosition = new Vector2(0, -140);
+            sp.carsTab      = TabBtn(tabStrip, "CARS", 0, 5);
+            sp.boostersTab  = TabBtn(tabStrip, "BOOST", 1, 5);
+            sp.cosmeticsTab = TabBtn(tabStrip, "STYLE", 2, 5);
+            sp.currencyTab  = TabBtn(tabStrip, "COINS", 3, 5);
+            sp.noAdsTab     = TabBtn(tabStrip, "NO ADS", 4, 5);
+
+            var panesArea = RT(card, "Panes"); Stretch(panesArea, 30, 30, 270, 40);
+
+            sp.carsPane = BuildStoreListPane(panesArea, "CarsPane", out var carsContent, out var carRow, BuildStoreCarRow);
+            sp.carsContent = carsContent; sp.carRowTemplate = carRow;
+
+            sp.boostersPane = BuildStoreListPane(panesArea, "BoostersPane", out var boostersContent, out var boosterRow, BuildStoreBoosterRow);
+            sp.boostersContent = boostersContent; sp.boosterRowTemplate = boosterRow;
+
+            sp.cosmeticsPane = BuildStoreListPane(panesArea, "CosmeticsPane", out var cosmeticsContent, out var cosmeticRow, BuildStoreCosmeticRow);
+            sp.cosmeticsContent = cosmeticsContent; sp.cosmeticRowTemplate = cosmeticRow;
+
+            sp.currencyPane = BuildStoreListPane(panesArea, "CurrencyPane", out var currencyContent, out var currencyRow, BuildCurrencyPackRow);
+            sp.currencyContent = currencyContent; sp.currencyRowTemplate = currencyRow;
+
+            sp.noAdsPane = BuildStoreNoAdsPane(panesArea, out var noAdsButton);
+            sp.noAdsButton = noAdsButton;
+
+            return SavePopup(rt.gameObject, Dir + "/Popups/StorePopup.prefab");
         }
 
         // ── Game HUD ─────────────────────────────────────────────────────────
@@ -592,7 +719,7 @@ namespace DriftTherapy.EditorTools
             var ph = RT(rawCanvas, "PopupHandler"); Stretch(ph);
             ui.popups = ph.gameObject.AddComponent<PopupHandler>();
             ui.purchaseConfirmPopup = BuildPurchaseConfirmPopup();
-            ui.shopPopup = BuildCurrencyShopPopup();
+            ui.shopPopup = BuildStorePopup();
 
             Save(root, Dir + "/GarageUI.prefab");
         }
