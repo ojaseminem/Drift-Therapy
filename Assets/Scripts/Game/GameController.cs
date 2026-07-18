@@ -432,9 +432,10 @@ public class GameController : MonoBehaviour
             bestDistanceMeters = GameApp.Instance.Data.bestDistanceMeters;
 
             LeaderboardProvider.Current.Submit(finalDistance, GameApp.Instance.Data.selectedVehicleId);
-            // TODO(PlayGames): also submit to the online leaderboard once GPGS is
-            // installed (PlatformServices.PlayGames.SubmitScore). Keep
-            // Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md in sync with this call site.
+            PlatformServices.PlayGames.SubmitScore("top_runs", Mathf.RoundToInt(finalDistance));
+
+            GameApp.Instance.TryUnlockAchievement(AchievementIds.FirstDrift);
+            if (finalDistance >= 2000f) GameApp.Instance.TryUnlockAchievement(AchievementIds.SpeedDemon);
         }
         else if (finalDistance > bestDistanceMeters)
         {

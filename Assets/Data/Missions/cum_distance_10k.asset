@@ -21,4 +21,4 @@ MonoBehaviour:
   rewardCoins: 500
   rewardGems: 0
   rewardXp: 0
-  achievementId: 
+  achievementId: achievement_road_warrior

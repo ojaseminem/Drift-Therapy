@@ -21,4 +21,4 @@ MonoBehaviour:
   rewardCoins: 0
   rewardGems: 10
   rewardXp: 0
-  achievementId: 
+  achievementId: achievement_coin_collector

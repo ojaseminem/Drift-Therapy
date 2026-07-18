@@ -21,4 +21,4 @@ MonoBehaviour:
   rewardCoins: 400
   rewardGems: 5
   rewardXp: 0
-  achievementId: 
+  achievementId: achievement_near_miss_master

@@ -28,9 +28,6 @@ namespace DriftTherapy
 
             if (viewGlobalButton)
             {
-                // TODO(PlayGames): enable once PlatformServices.PlayGames.IsAvailable is
-                // true and wire ShowLeaderboardUI(leaderboardId). Keep
-                // Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md in sync with this call site.
                 viewGlobalButton.gameObject.SetActive(PlatformServices.PlayGames.IsAvailable);
                 viewGlobalButton.onClick.RemoveAllListeners();
                 viewGlobalButton.onClick.AddListener(() => PlatformServices.PlayGames.ShowLeaderboardUI("top_runs"));

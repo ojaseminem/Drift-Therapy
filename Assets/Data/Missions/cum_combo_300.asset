@@ -21,4 +21,4 @@ MonoBehaviour:
   rewardCoins: 0
   rewardGems: 8
   rewardXp: 0
-  achievementId: 
+  achievementId: achievement_combo_chaser

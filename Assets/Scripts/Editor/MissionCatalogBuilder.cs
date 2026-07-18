@@ -28,15 +28,15 @@ namespace DriftTherapy.EditorTools
 
             // ── Cumulative (lifetime) ────────────────────────────────────────
             Author("cum_distance_10k", "Road Warrior", "Travel 10,000m in total.",
-                MissionScope.Cumulative, MissionMetric.DistanceMeters, 10000, coins: 500);
+                MissionScope.Cumulative, MissionMetric.DistanceMeters, 10000, coins: 500, achievementId: AchievementIds.RoadWarrior);
             Author("cum_nearmiss_100", "Near Miss Master", "Register 100 near misses.",
-                MissionScope.Cumulative, MissionMetric.NearMisses, 100, coins: 400, gems: 5);
+                MissionScope.Cumulative, MissionMetric.NearMisses, 100, coins: 400, gems: 5, achievementId: AchievementIds.NearMissMaster);
             Author("cum_coins_5000", "Coin Collector", "Earn 5,000 drift coins.",
-                MissionScope.Cumulative, MissionMetric.CoinsEarned, 5000, gems: 10);
+                MissionScope.Cumulative, MissionMetric.CoinsEarned, 5000, gems: 10, achievementId: AchievementIds.CoinCollector);
             Author("cum_runs_50", "Dedicated Drifter", "Complete 50 runs.",
-                MissionScope.Cumulative, MissionMetric.RunsCompleted, 50, coins: 600, xp: 200);
+                MissionScope.Cumulative, MissionMetric.RunsCompleted, 50, coins: 600, xp: 200, achievementId: AchievementIds.DedicatedDrifter);
             Author("cum_combo_300", "Combo Chaser", "Build big combo chains, over time.",
-                MissionScope.Cumulative, MissionMetric.DriftCombo, 300, gems: 8);
+                MissionScope.Cumulative, MissionMetric.DriftCombo, 300, gems: 8, achievementId: AchievementIds.ComboChaser);
 
             // ── Daily pool (one rolled active per day) ──────────────────────
             Author("daily_distance_500", "Distance Dash", "Travel 500m today.",

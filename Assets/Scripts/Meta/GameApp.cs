@@ -96,6 +96,9 @@ namespace DriftTherapy
 
         // ── Leaderboard (local top runs; see LeaderboardProvider) ───────────
         public List<LeaderboardEntry> leaderboardEntries = new List<LeaderboardEntry>();
+
+        // ── Play Games achievements (local tracking, mirrors server state) ──
+        public List<string> unlockedAchievementIds = new List<string>();
     }
 
     /// <summary>
@@ -202,6 +205,7 @@ namespace DriftTherapy
             if (Data.equippedAttachments == null) Data.equippedAttachments = new List<EquippedAttachmentState>();
             if (Data.ownedBoosterIds == null) Data.ownedBoosterIds = new List<string>();
             if (Data.equippedBoosterId == null) Data.equippedBoosterId = "";
+            if (Data.unlockedAchievementIds == null) Data.unlockedAchievementIds = new List<string>();
 
             // Grant any default-owned vehicles.
             if (vehicles != null)
@@ -321,6 +325,10 @@ namespace DriftTherapy
             Data.ownedVehicleIds.Add(v.id);
             Save();
             Changed?.Invoke();
+
+            if (Data.ownedVehicleIds.Count >= 5) TryUnlockAchievement(AchievementIds.GarageCollector);
+            if (vehicles != null && vehicles.Length > 0 && Data.ownedVehicleIds.Count >= vehicles.Length) TryUnlockAchievement(AchievementIds.FullHouse);
+
             return true;
         }
 
@@ -559,6 +567,20 @@ namespace DriftTherapy
             Data.removeAdsOwned = owned;
             Save();
             Changed?.Invoke();
+            if (owned) TryUnlockAchievement(AchievementIds.Supporter);
+        }
+
+        // ── Achievements ─────────────────────────────────────────────────────
+        public bool HasUnlockedAchievement(string achievementId) => Data.unlockedAchievementIds.Contains(achievementId);
+
+        /// <summary>Unlocks an achievement exactly once (locally deduped — safe to call
+        /// repeatedly), persists, and forwards to Play Games.</summary>
+        public void TryUnlockAchievement(string achievementId)
+        {
+            if (string.IsNullOrEmpty(achievementId) || Data.unlockedAchievementIds.Contains(achievementId)) return;
+            Data.unlockedAchievementIds.Add(achievementId);
+            Save();
+            PlatformServices.PlayGames.UnlockAchievement(achievementId);
         }
 
         // ── Progression ──────────────────────────────────────────────────────
@@ -743,12 +765,7 @@ namespace DriftTherapy
             if (def.rewardGems > 0) AddGems(def.rewardGems);
             if (def.rewardXp > 0) AddXp(def.rewardXp);
 
-            if (!string.IsNullOrEmpty(def.achievementId))
-            {
-                // TODO(PlayGames): unlock via a real GPGS-backed PlatformServices.PlayGames
-                // once installed. Keep Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md in sync.
-                PlatformServices.PlayGames.UnlockAchievement(def.achievementId);
-            }
+            TryUnlockAchievement(def.achievementId);
 
             Save();
             Changed?.Invoke();

@@ -21,4 +21,4 @@ MonoBehaviour:
   rewardCoins: 600
   rewardGems: 0
   rewardXp: 200
-  achievementId: 
+  achievementId: achievement_dedicated_drifter
