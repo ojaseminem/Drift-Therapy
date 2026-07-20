@@ -32,6 +32,13 @@ public class GameController : MonoBehaviour
     [Tooltip("Seconds of 3-2-1 countdown before the run begins (and car unlocks).")]
     [SerializeField] int countdownSeconds = 3;
 
+    [Header("Stuck-on-Fence Detection")]
+    [Tooltip("A screech alone never ends the run — but if actual speed (not the damage-capped target) stays below this while still touching the fence, the car is physically wedged, not just scraping past.")]
+    [SerializeField] float stuckOnFenceSpeedKph = 8f;
+    [Tooltip("How long the car must stay wedged against the fence below the speed above before it's treated as a crash.")]
+    [SerializeField] float stuckOnFenceSeconds = 2f;
+    float stuckOnFenceTimer;
+
     [Header("Crash Sequence")]
     [Tooltip("Seconds the crash physics play out before the game-over screen appears.")]
     [SerializeField] float crashWatchSeconds = 3f;
@@ -264,6 +271,25 @@ public class GameController : MonoBehaviour
         {
             runState.FailRun("stalled");
             return;
+        }
+
+        // Wedged against the fence: a screech alone is fine (TriggerCrash only fires on a
+        // hard hit), but the car can end up physically stuck at an angle where it's barely
+        // moving despite full throttle (target speed is unaffected — this isn't damage).
+        // Only actual instantaneous speed catches that, so it's tracked separately here.
+        if (fenceDetector != null && fenceDetector.IsTouchingFence && car != null && car.SpeedKph < stuckOnFenceSpeedKph)
+        {
+            stuckOnFenceTimer += Time.deltaTime;
+            if (stuckOnFenceTimer >= stuckOnFenceSeconds)
+            {
+                stuckOnFenceTimer = 0f;
+                TriggerCrash("stuck_on_fence", fenceDetector.LastContactPoint);
+                return;
+            }
+        }
+        else
+        {
+            stuckOnFenceTimer = 0f;
         }
 
         float total = road.DistanceTravelled;
@@ -614,6 +640,7 @@ public class GameController : MonoBehaviour
         boostFill = 0f;
         peakComboThisRun = 0;
         nearMissCountThisRun = 0;
+        stuckOnFenceTimer = 0f;
         GameSignals.RaiseDriftCoinsChanged(0, 0);
         GameSignals.RaiseBoostChanged(0f);
     }

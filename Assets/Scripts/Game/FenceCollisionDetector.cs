@@ -25,10 +25,19 @@ public class FenceCollisionDetector : MonoBehaviour
     float screechCooldownUntil = -1f;
     bool crashed;
 
+    float lastContactTime = -999f;
+    Vector3 lastContactPoint;
+
     /// <summary>Raised on a minor scrape. Payload = world contact point + contact normal.</summary>
     public event Action<Vector3, Vector3> Screeched;
     /// <summary>Raised once on a hard hit. Payload = world contact point.</summary>
     public event Action<Vector3> Crashed;
+
+    /// <summary>True while the car is presently resting against/scraping the fence (any
+    /// severity) — physics collision events aren't perfectly every-frame, so this has a
+    /// small grace window rather than requiring a hit this exact frame.</summary>
+    public bool IsTouchingFence => Time.time - lastContactTime < 0.15f;
+    public Vector3 LastContactPoint => lastContactPoint;
 
     /// <summary>Call on revive/restart so a fresh run can crash again.</summary>
     public void ResetState() => crashed = false;
@@ -42,6 +51,9 @@ public class FenceCollisionDetector : MonoBehaviour
         if (collision.collider.GetComponentInParent<FenceSurface>() == null) return;
 
         ContactPoint contact = collision.GetContact(0);
+        lastContactTime = Time.time;
+        lastContactPoint = contact.point;
+
         float normalSpeed = Mathf.Abs(Vector3.Dot(collision.relativeVelocity, contact.normal));
 
         if (normalSpeed >= crashNormalSpeedThreshold)
