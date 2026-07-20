@@ -39,6 +39,7 @@ public class FenceSparkEffect : MonoBehaviour
         if (ps != null)
         {
             ps.Play();
+            go.GetComponent<ImpactFlash>()?.Play();
             StartCoroutine(ReleaseAfter(go, ps.main.duration + ps.main.startLifetime.constantMax));
         }
         else

@@ -60,8 +60,13 @@ public class CarController :MonoBehaviour
 	#endregion //Properties of drif Settings
 
 	public CarConfig GetCarConfig { get { return CarConfig; } }
-	public Wheel[] Wheels { get; private set; }										//All wheels, public link.			
+	public Wheel[] Wheels { get; private set; }										//All wheels, public link.
 	public System.Action BackFireAction;                                            //Backfire invoked when cut off (You can add a invoke when changing gears).
+
+	/// <summary>Per-wheel flag skipping the normal WheelCollider-driven visual sync (see
+	/// Update()) — set once a wheel's visual mesh has been detached and given its own
+	/// rigidbody (crash sequence), so this stops fighting it every frame.</summary>
+	public bool[] WheelVisualDetached { get; private set; }
 
 	float[] AllGearsRatio;															 //All gears (Reverce, neutral and all forward).
 
@@ -103,6 +108,7 @@ public class CarController :MonoBehaviour
 			RearLeftWheel,
 			RearRightWheel
 		};
+		WheelVisualDetached = new bool[4];
 
 		//Set drive wheel.
 		switch (DriveType)
@@ -165,6 +171,7 @@ public class CarController :MonoBehaviour
 	{
 		for (int i = 0; i < Wheels.Length; i++)
 		{
+			if (WheelVisualDetached != null && WheelVisualDetached[i]) continue;
 			Wheels[i].UpdateVisual ();
 		}
 	}

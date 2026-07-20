@@ -157,7 +157,7 @@ MonoBehaviour:
   road: {fileID: 997332217}
   trafficDirector: {fileID: 1446299275}
   collectibleSpawner: {fileID: 2034762657}
-  fenceSparkVfxPrefab: {fileID: 7143739037649341461, guid: dfcd3c2a06aa03a468d8731d98ff5c28,
+  fenceSparkVfxPrefab: {fileID: 6008442666425377668, guid: dfcd3c2a06aa03a468d8731d98ff5c28,
     type: 3}
 --- !u!4 &6331151
 Transform:
@@ -1057,6 +1057,10 @@ MonoBehaviour:
   crashImpulseForce: 6
   crashUpwardForce: 2.5
   crashSpinTorque: 4
+  wheelScatterForce: 9
+  wheelScatterSpin: 24
+  crashShakeAmplitude: 0.5
+  crashShakeDuration: 0.4
   comboStepDistance: 25
   multiplierStep: 0.5
   nearMissBonus: 250
@@ -1148,6 +1152,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c464ba58d0caea3458861aaac39a20d1, type: 2}
   missions: []
   currencyPacks: []
+  attachments: []
+  boosters: []
 --- !u!4 &566026124
 Transform:
   m_ObjectHideFlags: 0

@@ -57,6 +57,8 @@ public static class GameSignals
     public static event Action<float> HealthChanged;
     /// <summary>Took collision damage (for shake/flash feedback).</summary>
     public static event Action Damaged;
+    /// <summary>Crash sequence began (physics impulse just applied). Payload = shake amplitude, duration.</summary>
+    public static event Action<float, float> CrashTriggered;
     /// <summary>Drift coins changed. (committed total this run, live pending combo)</summary>
     public static event Action<int, int> DriftCoinsChanged;
     /// <summary>Boost meter changed, 0..1.</summary>
@@ -97,6 +99,7 @@ public static class GameSignals
     public static void RaiseCountdownGo() => CountdownGo?.Invoke();
     public static void RaiseHealthChanged(float health01) => HealthChanged?.Invoke(health01);
     public static void RaiseDamaged() => Damaged?.Invoke();
+    public static void RaiseCrashTriggered(float shakeAmplitude, float shakeDuration) => CrashTriggered?.Invoke(shakeAmplitude, shakeDuration);
     public static void RaiseDriftCoinsChanged(int total, int pending) => DriftCoinsChanged?.Invoke(total, pending);
     public static void RaiseBoostChanged(float fill01) => BoostChanged?.Invoke(fill01);
     public static void RaiseCollected() => Collected?.Invoke();
@@ -122,7 +125,7 @@ public static class GameSignals
         ScoreChanged = null; MultiplierChanged = null; DistanceChanged = null;
         NearMiss = null; DifficultyChanged = null;
         CountdownTick = null; CountdownGo = null;
-        HealthChanged = null; Damaged = null; DriftCoinsChanged = null;
+        HealthChanged = null; Damaged = null; CrashTriggered = null; DriftCoinsChanged = null;
         BoostChanged = null; Collected = null;
         StartRequested = null; RestartRequested = null; ReviveRequested = null;
         PauseToggled = null; ResumeRequested = null; QuitRequested = null;

@@ -88,15 +88,19 @@ public class EnvironmentPropScatterer : MonoBehaviour
         {
             if (rng.NextDouble() > category.density) continue;
 
-            if (!TrySample(samples, arc, out Vector3 pos, out Vector3 right, out float halfWidth)) continue;
+            if (!TrySample(samples, arc, out Vector3 pos, out Vector3 right, out float halfWidth, out float localRadius)) continue;
 
             int sideCount = category.bothSides ? 2 : 1;
             for (int side = 0; side < sideCount; side++)
             {
                 float sign   = side == 0 ? 1f : -1f;
                 // sideOffsetRange is measured from the road EDGE, not the centerline —
-                // add halfWidth so props never land on the drivable surface.
-                float offset = halfWidth + Mathf.Lerp(category.sideOffsetRange.x, category.sideOffsetRange.y, (float)rng.NextDouble());
+                // add halfWidth so props never land on the drivable surface. On a tight
+                // turn, also clamp how far past the edge we reach so props can't fold
+                // across onto the road on the inside of the curve.
+                float desiredExtra = Mathf.Lerp(category.sideOffsetRange.x, category.sideOffsetRange.y, (float)rng.NextDouble());
+                float safeExtra = RoadGeometrySafety.ClampReachBeyondEdge(desiredExtra, halfWidth, localRadius);
+                float offset = halfWidth + safeExtra;
                 Vector3 worldPos = pos + right * (sign * offset);
 
                 float yRotDeg = Mathf.Lerp(category.yRotationJitterDeg.x, category.yRotationJitterDeg.y, (float)rng.NextDouble());
@@ -118,7 +122,7 @@ public class EnvironmentPropScatterer : MonoBehaviour
         }
     }
 
-    static bool TrySample(IReadOnlyList<ProceduralRoadMesher.SamplePoint> samples, float arc, out Vector3 position, out Vector3 right, out float halfWidth)
+    static bool TrySample(IReadOnlyList<ProceduralRoadMesher.SamplePoint> samples, float arc, out Vector3 position, out Vector3 right, out float halfWidth, out float localRadius)
     {
         for (int i = 0; i < samples.Count - 1; i++)
         {
@@ -129,15 +133,17 @@ public class EnvironmentPropScatterer : MonoBehaviour
             float span = b.DistanceAlongSpline - a.DistanceAlongSpline;
             float t    = span > 0f ? (arc - a.DistanceAlongSpline) / span : 0f;
 
-            position  = Vector3.Lerp(a.Position, b.Position, t);
-            right     = Quaternion.Slerp(a.Rotation, b.Rotation, t) * Vector3.right;
-            halfWidth = Mathf.Lerp(a.HalfWidth, b.HalfWidth, t);
+            position    = Vector3.Lerp(a.Position, b.Position, t);
+            right       = Quaternion.Slerp(a.Rotation, b.Rotation, t) * Vector3.right;
+            halfWidth   = Mathf.Lerp(a.HalfWidth, b.HalfWidth, t);
+            localRadius = RoadGeometrySafety.EstimateRadius(a.Rotation, b.Rotation, span);
             return true;
         }
 
-        position  = default;
-        right     = default;
-        halfWidth = default;
+        position    = default;
+        right       = default;
+        halfWidth   = default;
+        localRadius = default;
         return false;
     }
 

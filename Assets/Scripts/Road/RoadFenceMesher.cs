@@ -51,7 +51,17 @@ public class RoadFenceMesher : MonoBehaviour
             var sp = pts[r];
             var m  = Matrix4x4.TRS(sp.Position, sp.Rotation, Vector3.one);
 
-            float innerOff = sp.HalfWidth + FenceGap;
+            // On a tight turn (hairpins are deliberate here), a fixed FenceGap can fold
+            // across the road on the inside of the curve — clamp how far past the road
+            // edge the fence reaches based on the actual local turn radius at this ring.
+            int ra = Mathf.Max(0, r - 1);
+            int rb = Mathf.Min(rings - 1, r + 1);
+            float localRadius = ra != rb
+                ? RoadGeometrySafety.EstimateRadius(pts[ra].Rotation, pts[rb].Rotation, pts[rb].DistanceAlongSpline - pts[ra].DistanceAlongSpline)
+                : float.MaxValue;
+            float safeGap = RoadGeometrySafety.ClampReachBeyondEdge(FenceGap, sp.HalfWidth, localRadius);
+
+            float innerOff = sp.HalfWidth + safeGap;
             float outerOff = innerOff + FenceThickness;
             float h        = FenceHeight;
             float v        = sp.DistanceAlongSpline / Mathf.Max(0.01f, UvTileLength);

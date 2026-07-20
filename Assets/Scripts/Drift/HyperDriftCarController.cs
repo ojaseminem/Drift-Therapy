@@ -162,25 +162,93 @@ public class HyperDriftCarController : MonoBehaviour
     /// Cuts player control and kicks the rigidbody so the crash plays out physically
     /// (existing wheel/suspension physics keeps simulating — this only supplies the
     /// impact force/spin, not a full replacement of the drive model).
+    ///
+    /// The impulse is applied AT the contact point (not the car's center), so the
+    /// resulting spin naturally differs by where the hit landed — a corner clip spins
+    /// the car hard, a dead-center hit mostly just shunts it back — instead of every
+    /// crash reacting identically. Both the push and spin are then scaled well past
+    /// "physically accurate" for an arcade, gamified crash feel.
     /// </summary>
     public void ApplyCrashImpulse(Vector3? impactWorldPos, float impulseForce, float upwardForce, float spinTorque)
     {
         ControlsEnabled = false;
         if (car == null || car.RB == null) return;
+        Rigidbody rb = car.RB;
 
-        Vector3 awayDir = impactWorldPos.HasValue
-            ? transform.position - impactWorldPos.Value
-            : -transform.forward;
+        Vector3 contactPoint = impactWorldPos ?? (rb.worldCenterOfMass - transform.forward * 2f);
+        Vector3 awayDir = rb.worldCenterOfMass - contactPoint;
         awayDir.y = 0f;
         if (awayDir.sqrMagnitude < 0.01f) awayDir = -transform.forward;
         awayDir.Normalize();
 
-        Rigidbody rb = car.RB;
-        rb.linearVelocity *= 0.35f;
-        rb.AddForce(awayDir * impulseForce + Vector3.up * upwardForce, ForceMode.VelocityChange);
+        // Exaggerated "hard stop" — kill most of the existing momentum so the impulse
+        // below reads as a real impact, not just an addition on top of full speed.
+        rb.linearVelocity *= 0.25f;
+        rb.angularVelocity *= 0.25f;
 
-        Vector3 spinAxis = new Vector3(Random.Range(-1f, 1f), Random.Range(0.5f, 1f), Random.Range(-1f, 1f)).normalized;
-        rb.AddTorque(spinAxis * spinTorque, ForceMode.VelocityChange);
+        Vector3 impulseDir = (awayDir + Vector3.up * 0.7f).normalized;
+        rb.AddForceAtPosition(impulseDir * impulseForce, contactPoint, ForceMode.VelocityChange);
+
+        // Extra spin on top of whatever AddForceAtPosition's own leverage already
+        // produced — scaled by how far off-center the hit was (a corner hit tumbles
+        // harder than a centered one) plus a random component so no two crashes read
+        // identically, blended toward the contact-driven axis for a contact-true feel.
+        Vector3 leverArm = contactPoint - rb.worldCenterOfMass;
+        Vector3 contactTorqueAxis = Vector3.Cross(leverArm, impulseDir);
+        if (contactTorqueAxis.sqrMagnitude < 0.0001f) contactTorqueAxis = Vector3.up;
+        contactTorqueAxis.Normalize();
+
+        float offCenterFactor = Mathf.Clamp01(leverArm.magnitude / 2f);
+        Vector3 randomAxis = new Vector3(Random.Range(-1f, 1f), Random.Range(0.4f, 1f), Random.Range(-1f, 1f)).normalized;
+        Vector3 spinAxis = Vector3.Slerp(randomAxis, contactTorqueAxis, 0.7f).normalized;
+        rb.AddTorque(spinAxis * spinTorque * (1f + offCenterFactor), ForceMode.VelocityChange);
+    }
+
+    /// <summary>
+    /// Detaches all 4 wheel visuals from the car and flings them off as their own
+    /// physics objects — a gamified "wheels fly off" crash beat. Disables each wheel's
+    /// WheelCollider (so the now-wheel-less suspension corner stops fighting the body)
+    /// and sets CarController.WheelVisualDetached so Update() stops re-snapping the
+    /// mesh back onto the collider pose every frame.
+    /// </summary>
+    public void DetachAllWheels(Vector3? impactWorldPos, float scatterForce, float scatterSpin)
+    {
+        if (car == null || car.Wheels == null || car.RB == null) return;
+        Vector3 contact = impactWorldPos ?? transform.position;
+        Rigidbody carRb = car.RB;
+
+        for (int i = 0; i < car.Wheels.Length; i++)
+        {
+            var wheel = car.Wheels[i];
+            if (wheel.WheelView == null) continue;
+
+            car.WheelVisualDetached[i] = true;
+            if (wheel.WheelCollider != null) wheel.WheelCollider.enabled = false;
+
+            Transform view = wheel.WheelView;
+            view.SetParent(null, true);
+
+            var wheelRb = view.GetComponent<Rigidbody>();
+            if (wheelRb == null) wheelRb = view.gameObject.AddComponent<Rigidbody>();
+            wheelRb.mass = 18f;
+            wheelRb.linearVelocity = carRb.GetPointVelocity(view.position);
+
+            if (view.GetComponent<Collider>() == null)
+            {
+                var col = view.gameObject.AddComponent<SphereCollider>();
+                col.radius = 0.35f; // placeholder wheel-ish radius — close enough for a flung tire
+            }
+
+            Vector3 outward = view.position - contact;
+            outward.y = 0f;
+            if (outward.sqrMagnitude < 0.01f) outward = Random.insideUnitSphere;
+            outward = (outward.normalized + Vector3.up * Random.Range(0.5f, 1f)).normalized;
+
+            wheelRb.AddForce(outward * Random.Range(scatterForce * 0.7f, scatterForce), ForceMode.VelocityChange);
+            wheelRb.AddTorque(Random.insideUnitSphere.normalized * Random.Range(scatterSpin * 0.6f, scatterSpin), ForceMode.VelocityChange);
+
+            Object.Destroy(view.gameObject, 6f);
+        }
     }
 
     void CacheWheelStiffness()

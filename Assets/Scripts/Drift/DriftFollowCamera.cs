@@ -32,14 +32,35 @@ public class DriftFollowCamera : MonoBehaviour
     float targetComboT;
     float currentComboT;
 
+    float shakeAmplitude;
+    float shakeDuration;
+    float shakeTimeLeft;
+
     void Awake()
     {
         if (!cam) cam = GetComponent<Camera>();
         if (cam) baseFov = cam.fieldOfView;
     }
 
-    void OnEnable() => GameSignals.MultiplierChanged += HandleMultiplierChanged;
-    void OnDisable() => GameSignals.MultiplierChanged -= HandleMultiplierChanged;
+    void OnEnable()
+    {
+        GameSignals.MultiplierChanged += HandleMultiplierChanged;
+        GameSignals.CrashTriggered += Shake;
+    }
+
+    void OnDisable()
+    {
+        GameSignals.MultiplierChanged -= HandleMultiplierChanged;
+        GameSignals.CrashTriggered -= Shake;
+    }
+
+    /// <summary>Kicks off a short decaying positional shake — used for the crash impact beat.</summary>
+    public void Shake(float amplitude, float duration)
+    {
+        shakeAmplitude = amplitude;
+        shakeDuration = Mathf.Max(0.01f, duration);
+        shakeTimeLeft = shakeDuration;
+    }
 
     /// <summary>
     /// Maps combo tier to a 0..1 camera-feel intensity — cosmetic only, mirrors
@@ -69,6 +90,16 @@ public class DriftFollowCamera : MonoBehaviour
 
         Vector3 desiredPosition = target.TransformPoint(followOffset) + velocityOffset;
         transform.position = Vector3.SmoothDamp(transform.position, desiredPosition, ref cameraVelocity, positionSmoothTime);
+
+        if (shakeTimeLeft > 0f)
+        {
+            shakeTimeLeft -= Time.deltaTime;
+            float decay = Mathf.Clamp01(shakeTimeLeft / shakeDuration);
+            float mag = shakeAmplitude * decay * decay;
+            float nx = Mathf.PerlinNoise(Time.time * 28f, 0f) - 0.5f;
+            float ny = Mathf.PerlinNoise(0f, Time.time * 28f) - 0.5f;
+            transform.position += new Vector3(nx, ny, 0f) * (2f * mag);
+        }
 
         Vector3 lookPoint = target.TransformPoint(lookOffset) + velocityOffset * 0.6f;
         Vector3 lookDirection = (lookPoint - transform.position).normalized;

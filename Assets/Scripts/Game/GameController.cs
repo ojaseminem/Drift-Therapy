@@ -35,9 +35,13 @@ public class GameController : MonoBehaviour
     [Header("Crash Sequence")]
     [Tooltip("Seconds the crash physics play out before the game-over screen appears.")]
     [SerializeField] float crashWatchSeconds = 3f;
-    [SerializeField] float crashImpulseForce = 6f;
-    [SerializeField] float crashUpwardForce = 2.5f;
-    [SerializeField] float crashSpinTorque = 4f;
+    [SerializeField] float crashImpulseForce = 10f;
+    [SerializeField] float crashUpwardForce = 4f;
+    [SerializeField] float crashSpinTorque = 9f;
+    [SerializeField] float wheelScatterForce = 9f;
+    [SerializeField] float wheelScatterSpin = 24f;
+    [SerializeField] float crashShakeAmplitude = 0.5f;
+    [SerializeField] float crashShakeDuration = 0.4f;
 
     [Header("Score Tuning")]
     [SerializeField] float comboStepDistance = 25f;
@@ -556,7 +560,10 @@ public class GameController : MonoBehaviour
         if (car != null)
         {
             car.ApplyCrashImpulse(impactWorldPos, crashImpulseForce, crashUpwardForce, crashSpinTorque);
+            car.DetachAllWheels(impactWorldPos, wheelScatterForce, wheelScatterSpin);
         }
+
+        GameSignals.RaiseCrashTriggered(crashShakeAmplitude, crashShakeDuration);
 
         if (crashRoutine != null) StopCoroutine(crashRoutine);
         crashRoutine = StartCoroutine(CrashSequence(reason));
