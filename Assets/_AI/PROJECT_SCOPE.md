@@ -1,5 +1,7 @@
 # Project Scope
 
+> **Build status (2026-07-26): feature-complete first playable, 25/25 tests passing. Now in the art phase.** See `CURRENT_STATE.md` / `NEXT_STEPS.md`.
+
 ## One-line pitch
 Portrait hypercasual endless drift racer with constant forward motion, analog steering, tap/hold drift, traffic avoidance, combo scoring, and fast restart.
 

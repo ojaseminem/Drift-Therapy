@@ -1,5 +1,27 @@
 # Progress Log
 
+## 2026-07-26 — Docs audit & refresh (Cowork, no code changes)
+
+Ojas asked for the project's `_AI/` docs to be brought current: features are effectively
+done via Claude Code sessions, focus is shifting to art. Verified live via Unity MCP
+(scene/build-settings query, full script-folder listing, EditMode test run) rather than
+trusting the existing notes, since `STATE_ANALYSIS.md`/older docs pre-dated the core loop
+closing.
+
+- Confirmed via live scan: 3 scenes (`MainMenu`, `DriftEndless`, `Garage`), 86 scripts across
+  Drift/Road/Traffic/Game/Meta/Services/UI, **25/25 EditMode tests passing**, console clean
+  (only expected LevelPlay-no-App-Key and IAP fake-store notices).
+- Rewrote `CURRENT_STATE.md` and `NEXT_STEPS.md` — both were stale (written before traffic,
+  scoring, run-state, garage, missions, leaderboard, and IAP existed).
+- Updated `README.md` index and `PROJECT_SCOPE.md` with a build-status line.
+- No gameplay code touched this session.
+
+**Where it stands:** the hypercasual loop, meta progression, and monetization scaffolding
+are all real and tested. What's left is not more features — it's art content (biomes,
+traffic/player car restyle, VFX), an audio pass, external account setup (ads network, Play
+Games), and a device QA pass before release.
+
+
 ## 2026-07-08 (part 3) — Garage overhaul: modular vehicles, 3D scene, carousel
 
 Full 6-stage rework of vehicle selection, per the approved plan. Verified via

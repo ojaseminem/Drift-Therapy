@@ -1,54 +1,60 @@
 # Next Steps
 
-> Superseded the 2026-06 version of this doc, which referenced UI Toolkit —
-> the project moved to uGUI/TextMeshPro (see `Assets/Scripts/Editor/UIBuilder.cs`).
-> See `Assets/_AI/PROGRESS_LOG.md` (2026-07-08 entries) for what just shipped.
+> Refreshed 2026-07-26 via Cowork audit. Supersedes the 2026-07-08 version — the core loop,
+> meta progression, garage, and monetization scaffolding described as "next" there are now
+> done and verified (25/25 EditMode tests, live scene checks). The project's focus is moving
+> from **features** to **art**.
 
-## Done
-- Drift/steer core loop, endless road, biomes, traffic v2 (director/fairness/
-  follow-gap), collectibles, near-miss/collision detection, run state machine.
-- Missions/trials/daily-challenge system, local leaderboard, DOTween game-feel
-  pass, combo tiers, near-miss chaining, loading-screen transitions, safe-area
-  layout.
-- Settings screen (music/SFX/haptics toggles, remove-ads, restore purchases),
-  onboarding popup (first-run only).
-- Real IAP (`Assets/Scripts/Services/IAPService.cs`) for the remove-ads
-  non-consumable — functional today, verified in Editor Fake Store.
-- Combo-tier smoke tint (`Assets/Scripts/Drift/ComboSmokeFx.cs`) — the
-  tire-smoke item from the morning session, done via a non-invasive
-  `FXController` public-API hook (no ACC_Lite files touched).
-- Play Games/Ads/Consent all scaffolded as stubs (`Assets/Scripts/Services/`),
-  tracked in `Assets/_AI/PLAY_GAMES_ADS_INTEGRATION.md`.
+## Done (feature-complete)
+- Drift/steer core loop, endless procedural road, traffic (spawn/fairness/pooling),
+  near-miss + collision detection, run state machine, restart/revive flow.
+- Scoring: distance, drift combo tiers, near-miss chaining, live HUD.
+- Garage: modular vehicles, 3D carousel, purchase confirmation, gem currency.
+- Missions/trials/daily-challenge, local leaderboard.
+- Settings (audio/haptics toggles, restore purchases), first-run onboarding, fade scene
+  transitions, safe-area-correct layout.
+- Real IAP for remove-ads (verified in Editor Fake Store).
+- Ads / Play Games / consent fully scaffolded as stubs, ready to wire once external
+  accounts/decisions exist.
+- DOTween game-feel pass (popups, HUD, camera, combo tiers).
 
-## Needs external input (not more coding)
-1. Play Console app + OAuth client, then install `com.google.play.games` and
-   swap `PlatformServices.PlayGames` from the stub.
-2. Pick an ads mediation SDK (AdMob / LevelPlay / AppLovin MAX per
-   `MONETIZATION_PLAN.md`), install it, swap `PlatformServices.Ads`, and wire
-   a real CMP into `PlatformServices.Consent` (e.g. Google UMP if AdMob).
-3. A real device/editor Profiler pass (frame time, GC alloc/frame, DOTween
-   active-tween count under real play) — deliberately deferred so far to keep
-   sessions token-light; do this before a release build.
-4. Real remove-ads/rewarded-ad IAP store listing text, pricing, and a
-   completed purchase flow test on a real Google Play test track (Editor
-   Fake Store confirms the code path; it can't confirm the real store UI).
+## Now: art phase
+Ojas is shifting focus to art. Highest-leverage order, per `ART_PLAN.md`:
+1. **Restyle the player car** (hero read, confirm camera framing) — base on ACC_Lite
+   `SunLineGTE_Drift`, don't ship the vendor look as-is.
+2. **Author biome #1 end-to-end** (palette, sky, fog, post-processing, accent props) via
+   `Assets -> Create -> Drift Therapy -> Biome Data` — proves the pipeline; the
+   `RoadBiomeManager` code is ready and waiting on data. Suggested order: City
+   outskirts/alleys (golden hour) -> Hills (green->amber dusk) -> Bridge (blue hour).
+2. **Traffic archetypes** (2-3 silhouettes, recolor variants, muted vs. the player car).
+3. **VFX pass**: drift smoke intensity by combo, persistent skid decals, speed lines,
+   near-miss flash, crash burst.
+4. **HUD + end screen visual polish** to match the biome palette.
+5. **Biomes #2-3**, then juice/polish pass, then store assets (icon, screenshots, preview
+   video).
 
-## Good next coding sessions
-1. Wire `PlatformServices.Ads.ShowInterstitial`/`ShowRewarded` for real once
-   a network is picked (`GameController.HandleReviveRequested`,
-   `GameHudUI.GoHome` already have the TODO-commented landing spots).
-2. Audio integration pass per `AUDIO_PLAN.md` (needs UI/SFX audio assets —
-   engine/skid sounds already exist and are wired via ACC_Lite; near-miss
-   cue, combo escalation, crash, and UI sounds do not exist yet).
-3. QA pass per `QA_PLAN.md`, release build per `RELEASE_PLAN.md`.
-4. Optional IAP v5 API migration (`IAPService.cs` uses the classic
-   `IStoreListener` API — deprecated but fully supported; no urgency).
+Performance budgets to respect while restyling (see `ART_PLAN.md` section 6): player car
+≤3-5k tris, traffic ≤1.5-3k tris, 60fps target on mid-tier, 30fps floor on low-end, pooled
+decals/particles only.
 
-## Risk areas (still true)
-- Touch steering must feel immediate, not floaty — needs a real device pass.
-- Endless road spawning must avoid visible seams.
-- Traffic fairness (`TrafficDirector`) was code-reviewed and looks sound, but
-  only a real play session can confirm it *feels* fair.
-- Settings' volume toggles are binary (on/off), not continuous sliders — a
-  deliberate MVP simplification; revisit if the game grows an audio mix that
-  needs finer control.
+## Needs external input (not art, not code)
+1. Play Console app + OAuth client, then swap `PlatformServices.PlayGames` from its stub.
+2. Pick an ads mediation SDK (LevelPlay is already installed — just needs an App Key /
+   account setup) and wire a consent flow.
+3. A real device/editor Profiler pass (frame time, GC alloc/frame, DOTween tween count)
+   before any release build.
+4. Real remove-ads/rewarded-ad store listing text + a completed purchase test on a real
+   Google Play test track.
+
+## Good next coding sessions (once art assets exist, or in parallel)
+1. Wire `PlatformServices.Ads.ShowInterstitial`/`ShowRewarded` once a network is picked.
+2. Audio integration pass per `AUDIO_PLAN.md` (needs the SFX assets first).
+3. QA pass per `QA_PLAN.md`, then release build per `RELEASE_PLAN.md`.
+4. Optional: migrate `IAPService.cs` off the deprecated (but supported) classic IAP API.
+
+## Risk areas (still open, unchanged)
+- Touch steering feel is only validated in-editor/simulator — needs a real device pass.
+- Traffic fairness logic reads as sound in code review but hasn't had a long real-device
+  playtest.
+- Biome pop-in will need `crossfadeSpeed`/`startDistance` tuning once real biome content
+  exists — validate in motion on a phone, not the editor viewport.
